@@ -1,0 +1,3288 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>เงินป้าเล็ก — ระบบบริหารพอร์ตการเงินและบันทึกค่าใช้จ่าย (iOS Edition)</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ios-bg: #F2F2F7;
+      --ios-card: #FFFFFF;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Sarabun', 'Inter', sans-serif;
+      background-color: var(--ios-bg);
+      color: #0f172a;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-font-smoothing: antialiased;
+    }
+    .num-font {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Sarabun', sans-serif;
+      font-variant-numeric: tabular-nums;
+    }
+    /* ป้องกัน iPhone Safari ซูมหน้าจออัตโนมัติเวลาแตะช่องกรอกข้อมูล */
+    input, select, textarea {
+      font-size: 16px !important;
+    }
+    .card-shadow {
+      box-shadow: 0 2px 14px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03);
+    }
+    .hero-net-shadow {
+      box-shadow: 0 14px 30px -6px rgba(5, 150, 105, 0.28), 0 4px 12px -2px rgba(5, 150, 105, 0.14);
+    }
+    .cat-btn {
+      transition: all 0.16s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .cat-btn:active {
+      transform: scale(0.97);
+    }
+    .cat-btn.active {
+      ring-width: 3px;
+    }
+    .ios-glass-nav {
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+    }
+    .ios-header-glass {
+      background: rgba(15, 23, 42, 0.92);
+      backdrop-filter: saturate(180%) blur(18px);
+      -webkit-backdrop-filter: saturate(180%) blur(18px);
+    }
+    .fab-pulse {
+      box-shadow: 0 8px 24px -2px rgba(5, 150, 105, 0.55);
+    }
+  </style>
+</head>
+<body class="min-h-screen pb-28 sm:pb-24">
+
+  <!-- iOS-Style Sticky Top Header Bar -->
+  <header class="ios-header-glass text-white sticky top-0 z-30 border-b border-slate-800/80">
+    <div class="max-w-5xl mx-auto px-3.5 sm:px-6 py-3 flex items-center justify-between gap-2">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-xl shadow-inner shrink-0">
+          💼
+        </div>
+        <div class="min-w-0">
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <h1 class="text-base sm:text-lg font-extrabold tracking-tight truncate">เงินป้าเล็ก</h1>
+            <span id="sampleBadge" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-400/30">
+              ✨ มีข้อมูลตัวอย่าง (ทอง 3 ไม้ / หุ้น 3 ไม้)
+            </span>
+            <span id="syncStatusBadge" class="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+              🟢 พร้อมใช้งาน
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-300 truncate">พอร์ตการเงิน บันทึกค่าใช้จ่าย & คำนวณทอง-หุ้นรายไม้</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-1.5 shrink-0">
+        <!-- ปุ่ม + เปิด Pop-up บันทึกรายการใหม่ -->
+        <button id="btnOpenRecordModalTop" type="button" onclick="openRecordModal()" class="px-3.5 py-2 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 active:scale-95 text-slate-950 text-xs sm:text-sm font-extrabold transition flex items-center gap-1 shadow-md">
+          <span class="text-base leading-none font-black">＋</span> บันทึกรายการใหม่
+        </button>
+        <button id="btnClearSampleHeader" type="button" onclick="openConfirmModal('clearSample')" class="px-2.5 py-2 rounded-2xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-400/30 text-xs font-semibold transition flex items-center gap-1" title="ล้างข้อมูลตัวอย่าง">
+          <span>🧹</span> <span class="hidden md:inline">ล้างข้อมูลตัวอย่าง</span>
+        </button>
+        <a href="https://docs.google.com/spreadsheets/d/1oRr9HCFZ0fI_hM1b5gpRG7eue6vKAVGrJp1Fv0Udm64/edit" target="_blank" rel="noopener noreferrer" class="px-2.5 py-2 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 text-xs font-semibold transition flex items-center gap-1" title="เปิด Google Sheet เงินป้าเล็ก">
+          <span>📗</span> <span class="hidden lg:inline">เปิด Google Sheet เงินป้าเล็ก</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- iOS Bottom Tab Bar (เหมาะสำหรับกดด้วยนิ้วโป้งบน iPhone) -->
+  <div class="fixed bottom-0 inset-x-0 z-40 ios-glass-nav border-t border-slate-200/90 px-2 pt-1.5 pb-3 shadow-lg">
+    <div class="max-w-lg mx-auto grid grid-cols-5 items-center gap-1">
+      <button type="button" id="iosNavRecord" onclick="switchTab('record')" class="flex flex-col items-center justify-center py-1 rounded-xl text-emerald-600 font-bold">
+        <span class="text-lg leading-none">🏠</span>
+        <span class="text-[11px] mt-1">พอร์ตหลัก</span>
+      </button>
+
+      <button type="button" id="iosNavHistory" onclick="switchTab('history')" class="flex flex-col items-center justify-center py-1 rounded-xl text-slate-500 font-semibold">
+        <span class="text-lg leading-none">🕒</span>
+        <span class="text-[11px] mt-1">ประวัติ/เวลาใช้</span>
+      </button>
+
+      <!-- ปุ่มกลาง + ขนาดใหญ่สไตล์แอป iOS -->
+      <div class="flex flex-col items-center justify-center -mt-5">
+        <button id="fabOpenRecordModal" type="button" onclick="openRecordModal()" title="บันทึกรายการเคลื่อนไหวใหม่" class="w-14 h-14 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-500 text-white fab-pulse active:scale-95 transition flex items-center justify-center border-4 border-white">
+          <span class="text-3xl leading-none font-black">＋</span>
+          <span class="sr-only">บันทึกรายการ</span>
+        </button>
+        <span class="text-[11px] font-extrabold text-emerald-700 mt-0.5">จดบันทึก</span>
+      </div>
+
+      <button type="button" id="iosNavStats" onclick="switchTab('stats')" class="flex flex-col items-center justify-center py-1 rounded-xl text-slate-500 font-semibold">
+        <span class="text-lg leading-none">📊</span>
+        <span class="text-[11px] mt-1">สถิติรายเดือน</span>
+      </button>
+
+      <button type="button" id="iosNavSheet" onclick="switchTab('sheet')" class="flex flex-col items-center justify-center py-1 rounded-xl text-slate-500 font-semibold">
+        <span class="text-lg leading-none">🔗</span>
+        <span class="text-[11px] mt-1">เชื่อมชีต</span>
+      </button>
+    </div>
+  </div>
+
+  <main class="max-w-5xl mx-auto px-3.5 sm:px-6 pt-4 space-y-4 sm:space-y-6">
+
+    <!-- Quick Action Bar สำหรับ iPhone: กดจดค่าใช้จ่าย / ซื้อทอง / ซื้อหุ้น / อัปเดตราคา ในแตะเดียว -->
+    <section aria-label="ปุ่มลัดการใช้งานบน iPhone" class="bg-white rounded-[22px] p-3 sm:p-4 card-shadow border border-slate-200/80">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-xs font-extrabold text-slate-700 flex items-center gap-1.5">
+          <span>📱</span> ทางลัดจดบันทึกด่วน (แตะเพื่อเปิดหน้าต่างบันทึกทันที)
+        </span>
+        <span class="text-[11px] text-emerald-700 font-bold">ใช้งานง่ายบน iPhone</span>
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <button type="button" onclick="openRecordModal('เงินที่ใช้ออกไป / ถอนใช้')" class="py-2.5 px-3 rounded-2xl bg-orange-50 hover:bg-orange-100 active:scale-95 border border-orange-200/90 text-left transition flex items-center gap-2.5">
+          <span class="w-9 h-9 rounded-xl bg-orange-500 text-white flex items-center justify-center text-lg shrink-0 font-bold">💸</span>
+          <div class="min-w-0">
+            <div class="text-xs sm:text-sm font-extrabold text-orange-950 truncate">จดค่าใช้จ่าย</div>
+            <div class="text-[11px] text-orange-700 truncate">ถอนใช้ส่วนตัว</div>
+          </div>
+        </button>
+
+        <button type="button" onclick="openRecordModal('เงินลงทุนทองคำ')" class="py-2.5 px-3 rounded-2xl bg-amber-50 hover:bg-amber-100 active:scale-95 border border-amber-200/90 text-left transition flex items-center gap-2.5">
+          <span class="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center text-lg shrink-0 font-bold">🥇</span>
+          <div class="min-w-0">
+            <div class="text-xs sm:text-sm font-extrabold text-amber-950 truncate">ซื้อทองเพิ่ม</div>
+            <div class="text-[11px] text-amber-700 truncate">บันทึกแยกไม้</div>
+          </div>
+        </button>
+
+        <button type="button" onclick="openRecordModal('เงินลงทุนหุ้น')" class="py-2.5 px-3 rounded-2xl bg-sky-50 hover:bg-sky-100 active:scale-95 border border-sky-200/90 text-left transition flex items-center gap-2.5">
+          <span class="w-9 h-9 rounded-xl bg-sky-600 text-white flex items-center justify-center text-lg shrink-0 font-bold">📊</span>
+          <div class="min-w-0">
+            <div class="text-xs sm:text-sm font-extrabold text-sky-950 truncate">ซื้อหุ้นเพิ่ม</div>
+            <div class="text-[11px] text-sky-700 truncate">ระบุชื่อย่อหุ้น</div>
+          </div>
+        </button>
+
+        <button type="button" onclick="openGeminiConfigModal()" class="py-2.5 px-3 rounded-2xl bg-indigo-50 hover:bg-indigo-100 active:scale-95 border border-indigo-200/90 text-left transition flex items-center gap-2.5">
+          <span class="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-lg shrink-0 font-bold">🏷️</span>
+          <div class="min-w-0">
+            <div class="text-xs sm:text-sm font-extrabold text-indigo-950 truncate">กรอกราคาปัจจุบัน</div>
+            <div class="text-[11px] text-indigo-700 truncate">อัปเดตทอง & หุ้น</div>
+          </div>
+        </button>
+      </div>
+    </section>
+
+    <!-- HERO SECTION: เงินรวมสุทธิทั้งหมด (เด่นที่สุด + รวมมูลค่าตลาดปัจจุบัน) คู่กับ เงินสดคงเหลือ -->
+    <section aria-label="สรุปยอดเงินหลัก">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-3.5 sm:gap-4 items-stretch">
+
+        <!-- PRIMARY FEATURED CARD: เงินรวมสุทธิทั้งหมด (7 cols) -->
+        <div class="lg:col-span-7 rounded-[24px] bg-gradient-to-br from-emerald-900 via-emerald-800 to-teal-900 text-white p-5 sm:p-6 hero-net-shadow relative overflow-hidden flex flex-col justify-between border border-emerald-600/40">
+          <div class="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-emerald-400/10 pointer-events-none"></div>
+
+          <div>
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-400/20 text-emerald-200 text-xs font-bold border border-emerald-300/30">
+                💰 เงินรวมสุทธิทั้งหมด (คิดตามราคาปัจจุบัน)
+              </span>
+              <span id="heroRoiBadge" class="num-font inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/15 text-white text-xs font-bold">
+                📈 ROI รวม: +0.63%
+              </span>
+            </div>
+
+            <div class="mt-2 flex flex-wrap items-baseline gap-2.5">
+              <div id="heroNetTotal" class="num-font text-3xl sm:text-5xl font-extrabold tracking-tight text-white">
+                ฿4,015,000.00
+              </div>
+              <div id="heroNetDiffBadge" class="num-font text-xs sm:text-sm font-bold px-2.5 py-1 rounded-xl bg-emerald-400/25 text-emerald-100">
+                +฿15,000.00 จากเงินต้น
+              </div>
+            </div>
+
+            <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-emerald-100/90">
+              <span>• คิดจากต้นทุนเดิม: <strong id="heroBookNetTotal" class="num-font text-white">฿4,015,000.00</strong></span>
+              <span>• กำไร/ขาดทุนตามราคาปัจจุบัน: <strong id="heroUnrealizedBadge" class="num-font text-amber-300">+฿0.00</strong></span>
+            </div>
+          </div>
+
+          <!-- Progress / Composition Bar inside Primary Card -->
+          <div class="mt-4 pt-3.5 border-t border-emerald-700/60">
+            <div class="grid grid-cols-3 gap-2 text-center">
+              <div class="bg-white/10 rounded-2xl p-2.5 backdrop-blur-sm">
+                <div class="text-[11px] text-emerald-200">💵 เงินสดคงเหลือ</div>
+                <div id="heroSubCash" class="num-font text-xs sm:text-base font-bold text-white mt-0.5">฿3,665,000</div>
+              </div>
+              <div class="bg-white/10 rounded-2xl p-2.5 backdrop-blur-sm">
+                <div class="text-[11px] text-amber-200">🥇 ทองคำปัจจุบัน</div>
+                <div id="heroSubGold" class="num-font text-xs sm:text-base font-bold text-amber-300 mt-0.5">฿150,000</div>
+                <div id="heroSubGoldPnl" class="num-font text-[10px] text-amber-200/90">ทุน ฿150,000</div>
+              </div>
+              <div class="bg-white/10 rounded-2xl p-2.5 backdrop-blur-sm">
+                <div class="text-[11px] text-sky-200">📊 หุ้นปัจจุบัน</div>
+                <div id="heroSubStock" class="num-font text-xs sm:text-base font-bold text-sky-300 mt-0.5">฿200,000</div>
+                <div id="heroSubStockPnl" class="num-font text-[10px] text-sky-200/90">ทุน ฿200,000</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECONDARY COMPANION CARD: เงินสดคงเหลือจากเงินต้น (5 cols) -->
+        <div class="lg:col-span-5 rounded-[24px] bg-white p-5 sm:p-6 card-shadow border border-slate-200/90 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between gap-2">
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 text-blue-800 text-xs font-bold border border-blue-200">
+                💵 เงินสดคงเหลือจากเงินต้น
+              </span>
+              <button type="button" onclick="openPrincipalModal()" class="text-xs font-semibold text-slate-500 hover:text-blue-700 underline flex items-center gap-1">
+                ⚙️ แก้ไขเงินต้นหลัก
+              </button>
+            </div>
+
+            <div id="heroCashRemaining" class="num-font text-2xl sm:text-4xl font-extrabold text-slate-900 mt-2.5 tracking-tight">
+              ฿3,665,000.00
+            </div>
+
+            <div class="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-slate-600">
+              <span>จากเงินต้น:</span>
+              <strong id="heroPrincipalVal" class="num-font text-slate-900">฿4,000,000.00</strong>
+              <span id="heroCashFlowBadge" class="num-font px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 font-semibold">
+                เคลื่อนไหวสุทธิ -฿335,000.00
+              </span>
+            </div>
+          </div>
+
+          <div class="mt-4 pt-3.5 border-t border-slate-100 space-y-2">
+            <div class="flex items-center justify-between text-xs font-semibold text-slate-600">
+              <span>สัดส่วนเงินสดคงเหลือเทียบเงินต้น</span>
+              <span id="heroCashPercent" class="num-font text-blue-700 font-bold">91.63%</span>
+            </div>
+            <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden flex">
+              <div id="barCashPct" class="bg-blue-600 h-full transition-all duration-300" style="width: 91.6%"></div>
+              <div id="barInvestPct" class="bg-amber-500 h-full transition-all duration-300" style="width: 8.4%"></div>
+            </div>
+            <div class="flex items-center justify-between text-[11px] sm:text-xs text-slate-500 pt-0.5">
+              <span>🟢 กำไรรับจริง: <strong id="miniProfitText" class="num-font text-emerald-700">฿25,000.00</strong></span>
+              <span>🔴 ขาดทุน: <strong id="miniLossText" class="num-font text-rose-600">฿0.00</strong></span>
+              <span>💸 ถอนใช้: <strong id="miniExpenseText" class="num-font text-orange-600">฿10,000.00</strong></span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 5 Category Summary Mini-Cards -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3 mt-3.5">
+        <div class="bg-white rounded-2xl p-3.5 border border-amber-200/80 card-shadow">
+          <span class="text-[11px] font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-lg">🥇 ทองคำ (มูลค่าปัจจุบัน)</span>
+          <div id="cardGoldNet" class="num-font text-base sm:text-lg font-extrabold text-slate-900 mt-1.5">฿150,000.00</div>
+          <div id="cardGoldSub" class="text-[11px] text-slate-500 mt-0.5">ทุน ฿150,000</div>
+        </div>
+
+        <div class="bg-white rounded-2xl p-3.5 border border-sky-200/80 card-shadow">
+          <span class="text-[11px] font-bold text-sky-800 bg-sky-50 px-2 py-0.5 rounded-lg">📊 หุ้น (มูลค่าปัจจุบัน)</span>
+          <div id="cardStockNet" class="num-font text-base sm:text-lg font-extrabold text-slate-900 mt-1.5">฿200,000.00</div>
+          <div id="cardStockSub" class="text-[11px] text-slate-500 mt-0.5">ทุน ฿200,000</div>
+        </div>
+
+        <div class="bg-white rounded-2xl p-3.5 border border-emerald-200/80 card-shadow">
+          <span class="text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-lg">📈 กำไร / ปันผลสะสม</span>
+          <div id="cardProfitTotal" class="num-font text-base sm:text-lg font-extrabold text-emerald-700 mt-1.5">+฿25,000.00</div>
+          <div class="text-[11px] text-slate-500 mt-0.5">รับเข้าเงินสดแล้ว</div>
+        </div>
+
+        <div class="bg-white rounded-2xl p-3.5 border border-rose-200/80 card-shadow">
+          <span class="text-[11px] font-bold text-rose-800 bg-rose-50 px-2 py-0.5 rounded-lg">📉 ขาดทุนสะสม</span>
+          <div id="cardLossTotal" class="num-font text-base sm:text-lg font-extrabold text-rose-600 mt-1.5">-฿0.00</div>
+          <div class="text-[11px] text-slate-500 mt-0.5">หักจากเงินรวมสุทธิ</div>
+        </div>
+
+        <div class="bg-white rounded-2xl p-3.5 border border-orange-200/80 card-shadow col-span-2 sm:col-span-1">
+          <span class="text-[11px] font-bold text-orange-800 bg-orange-50 px-2 py-0.5 rounded-lg">💸 เงินที่ใช้ออกไป / ถอนใช้</span>
+          <div id="cardExpenseTotal" class="num-font text-base sm:text-lg font-extrabold text-orange-600 mt-1.5">-฿10,000.00</div>
+          <div class="text-[11px] text-slate-500 mt-0.5">ค่าใช้จ่ายส่วนตัวป้าเล็ก</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Segmented Top Navigation Tabs (ทำงานประสานกับ iOS Bottom Tab Bar) -->
+    <nav class="bg-white p-1.5 rounded-2xl card-shadow border border-slate-200/90 flex flex-wrap gap-1" aria-label="เมนูหลัก">
+      <button id="tabBtnRecord" type="button" onclick="switchTab('record')" class="flex-1 min-w-[120px] py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-1.5 bg-emerald-600 text-white shadow-sm">
+        <span>📝</span> 1. หน้าบันทึกเงิน
+      </button>
+      <button id="tabBtnHistory" type="button" onclick="switchTab('history')" class="flex-1 min-w-[120px] py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-1.5 text-slate-700 hover:bg-slate-100">
+        <span>🕒</span> 2. รายละเอียดการใช้ (รายเดือน/เวลา)
+      </button>
+      <button id="tabBtnStats" type="button" onclick="switchTab('stats')" class="flex-1 min-w-[120px] py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-1.5 text-slate-700 hover:bg-slate-100">
+        <span>📊</span> 3. สถิติรายเดือน
+      </button>
+      <button id="tabBtnSheet" type="button" onclick="switchTab('sheet')" class="flex-1 min-w-[120px] py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-1.5 text-slate-700 hover:bg-slate-100">
+        <span>🔗</span> 4. เชื่อมข้อมูล Google Sheet
+      </button>
+    </nav>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 1: ภาพรวมพอร์ตทองคำ-หุ้นรายไม้ & กรอกราคาปัจจุบันแบบ Manual           -->
+    <!-- ========================================================================= -->
+    <section id="viewRecord" class="space-y-5">
+
+      <!-- แผงกรอกราคาทองคำและราคาหุ้นปัจจุบันแบบ Manual (ใส่เองได้ทันที) -->
+      <div class="bg-white rounded-[24px] p-4 sm:p-6 card-shadow border-2 border-indigo-500/25 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-start gap-3">
+            <div class="w-11 h-11 rounded-2xl bg-indigo-100 text-indigo-800 flex items-center justify-center text-xl shrink-0">
+              🏷️
+            </div>
+            <div>
+              <div class="flex items-center gap-2 flex-wrap">
+                <h2 class="text-base sm:text-lg font-extrabold text-slate-900">
+                  กรอกราคาทองคำ & ราคาหุ้นปัจจุบัน (Manual Sync)
+                </h2>
+                <span id="lastPriceSyncLabel" class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 num-font">
+                  อัปเดตล่าสุด: กรอกด้วยตัวเอง
+                </span>
+              </div>
+              <p class="text-xs text-slate-600 mt-0.5">
+                พิมพ์ราคาทองคำและราคาหุ้นแต่ละตัว ณ ปัจจุบันด้านล่าง แล้วกด <strong>🔄 Sync ราคาทอง & หุ้นปัจจุบัน</strong> เพื่อคำนวณยอดเงินคงเหลือของก้อนที่ลงทุนทันที
+              </p>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <button id="btnSyncMarketPrices" type="button" onclick="syncAllMarketPrices()" class="flex-1 sm:flex-initial justify-center px-4 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-extrabold text-xs sm:text-sm shadow-sm transition flex items-center gap-1.5">
+              <span id="syncSpinnerIcon">🔄</span> Sync ราคาทอง & หุ้นปัจจุบัน
+            </button>
+            <button id="btnOpenGeminiModal" type="button" onclick="openGeminiConfigModal()" class="px-3.5 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs sm:text-sm transition flex items-center gap-1">
+              <span>✨</span> ตั้งค่า Gemini AI / วิธีดึงราคา
+            </button>
+            <button id="btnOpenRecordModalMain" type="button" onclick="openRecordModal()" class="w-full sm:w-auto justify-center px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-extrabold text-xs sm:text-sm shadow-sm transition flex items-center gap-1.5">
+              <span class="text-base leading-none font-black">＋</span> บันทึกรายการ / ซื้อไม้เพิ่ม
+            </button>
+          </div>
+        </div>
+
+        <!-- ช่องกรอกราคาทองคำแท่ง และ ราคาหุ้นแต่ละตัวแบบ Manual บนหน้าหลัก -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-3 pt-2 border-t border-slate-100">
+          <!-- 1. กรอกราคาทองคำปัจจุบัน -->
+          <div class="md:col-span-5 bg-amber-50/90 border border-amber-200 rounded-2xl p-3.5 flex flex-col justify-between gap-2">
+            <div class="flex items-center justify-between">
+              <label for="inputCurrentGoldPrice" class="text-xs font-extrabold text-amber-950">
+                🥇 ราคาทองคำปัจจุบัน (บาท / 1 บาททอง)
+              </label>
+              <span class="text-[11px] font-semibold text-amber-800 bg-amber-200/60 px-2 py-0.5 rounded-md">กรอกเอง</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="relative flex-1">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-amber-800 text-sm">฿</span>
+                <input type="number" id="inputCurrentGoldPrice" step="any" inputmode="decimal" value="43650" oninput="onManualGoldPriceChange()" class="num-font w-full pl-7 pr-3 py-2 rounded-xl border border-amber-300 bg-white text-right font-extrabold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+              </div>
+              <button type="button" onclick="adjustGoldPriceStep(-100)" class="px-2.5 py-2 rounded-xl bg-white border border-amber-300 text-amber-900 font-bold text-xs active:scale-95">-100</button>
+              <button type="button" onclick="adjustGoldPriceStep(100)" class="px-2.5 py-2 rounded-xl bg-white border border-amber-300 text-amber-900 font-bold text-xs active:scale-95">+100</button>
+            </div>
+          </div>
+
+          <!-- 2. กรอกราคาหุ้นปัจจุบันของหุ้นแต่ละตัวที่มีในพอร์ต -->
+          <div class="md:col-span-7 bg-sky-50/90 border border-sky-200 rounded-2xl p-3.5 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-extrabold text-sky-950">📊 ราคาหุ้นปัจจุบัน (กรอกราคาต่อหุ้นของแต่ละตัว):</span>
+              <span class="text-[11px] font-semibold text-sky-800 bg-sky-200/60 px-2 py-0.5 rounded-md">แยกตามชื่อย่อหุ้น</span>
+            </div>
+            <div id="manualStockPriceInputsGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <!-- Populated dynamically with each stock ticker in portfolio -->
+            </div>
+          </div>
+        </div>
+
+        <!-- สรุปมูลค่าก้อนที่ลงทุนเทียบราคาปัจจุบัน -->
+        <div class="bg-slate-900 text-white rounded-2xl p-3.5 grid grid-cols-3 gap-2 text-center">
+          <div>
+            <div class="text-[11px] text-slate-300">เงินต้นที่ลงไป (ทอง+หุ้น)</div>
+            <div id="summaryTotalInvestedCost" class="num-font text-xs sm:text-base font-extrabold text-white mt-0.5">฿350,000.00</div>
+          </div>
+          <div class="border-x border-slate-700 px-1">
+            <div class="text-[11px] text-emerald-300 font-semibold">ยอดคงเหลือตามราคาปัจจุบัน</div>
+            <div id="summaryTotalMarketValue" class="num-font text-xs sm:text-base font-extrabold text-emerald-400 mt-0.5">฿367,780.00</div>
+          </div>
+          <div>
+            <div class="text-[11px] text-amber-300">กำไร/ขาดทุนของก้อนที่ลงทุน</div>
+            <div id="summaryTotalUnrealizedPnl" class="num-font text-xs sm:text-base font-extrabold text-amber-300 mt-0.5">+฿17,780.00</div>
+          </div>
+        </div>
+
+        <!-- กล่องสรุปผลการคำนวณเมื่อกด Sync -->
+        <div id="geminiInsightBanner" class="hidden rounded-2xl bg-indigo-950 text-indigo-100 p-4 border border-indigo-700 text-xs sm:text-sm space-y-1">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-indigo-300 flex items-center gap-1.5">📌 สรุปการเทียบราคาปัจจุบันกับเงินที่ลงทุนไป:</span>
+            <button type="button" onclick="hideGeminiInsight()" class="text-xs text-indigo-300 hover:text-white">ปิด ✕</button>
+          </div>
+          <div id="geminiInsightText" class="leading-relaxed text-indigo-100"></div>
+        </div>
+      </div>
+
+      <!-- =================================================================== -->
+      <!-- ตารางพอร์ตทองคำรายไม้ & ตารางพอร์ตหุ้นรายไม้                         -->
+      <!-- =================================================================== -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+
+        <!-- ฝั่งซ้าย (7 cols): พอร์ตทองคำรายไม้ & พอร์ตหุ้นรายไม้ -->
+        <div class="lg:col-span-7 space-y-5">
+
+          <!-- 1. พอร์ตทองคำรายไม้ (Gold Lots) -->
+          <div class="bg-white rounded-[24px] p-4 sm:p-6 card-shadow border border-amber-200/90 space-y-3.5">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xl">🥇</span>
+                  <h3 class="text-base sm:text-lg font-extrabold text-slate-900">พอร์ตเงินลงทุนทองคำ (แยกรายไม้)</h3>
+                </div>
+                <p class="text-xs text-slate-500 mt-0.5">
+                  เทียบราคาซื้อของแต่ละไม้กับราคาทองปัจจุบัน เพื่อหายอดเงินคงเหลือของก้อนที่ลงทุน
+                </p>
+              </div>
+              <button type="button" onclick="openRecordModal('เงินลงทุนทองคำ')" class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-extrabold text-xs transition flex items-center gap-1 shadow-sm">
+                <span>＋</span> ซื้อทองเพิ่ม (ไม้ใหม่)
+              </button>
+            </div>
+
+            <div class="overflow-x-auto -mx-2 px-2">
+              <table class="w-full text-xs sm:text-sm border-collapse">
+                <thead>
+                  <tr class="bg-amber-50 text-amber-950 border-y border-amber-200 text-left">
+                    <th class="py-2.5 px-2 font-bold">ไม้ที่ / วันที่ซื้อ</th>
+                    <th class="py-2.5 px-2 text-right font-bold">เงินที่ลง (ทุน)</th>
+                    <th class="py-2.5 px-2 text-right font-bold">ราคาซื้อ</th>
+                    <th class="py-2.5 px-2 text-right font-bold">น้ำหนักทอง</th>
+                    <th class="py-2.5 px-2 text-right font-bold bg-amber-100/60">ยอดคงเหลือปัจจุบัน</th>
+                    <th class="py-2.5 px-2 text-right font-bold">กำไร/ขาดทุน</th>
+                    <th class="py-2.5 px-2 text-center font-bold">จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody id="goldLotsTableBody" class="divide-y divide-slate-100 num-font">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- 2. พอร์ตหุ้นรายไม้ (Stock Lots with Ticker) -->
+          <div class="bg-white rounded-[24px] p-4 sm:p-6 card-shadow border border-sky-200/90 space-y-3.5">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xl">📊</span>
+                  <h3 class="text-base sm:text-lg font-extrabold text-slate-900">พอร์ตเงินลงทุนหุ้น (แยกรายไม้ & ชื่อย่อหุ้น)</h3>
+                </div>
+                <p class="text-xs text-slate-500 mt-0.5">
+                  พิมพ์ราคาหุ้นปัจจุบันในช่องของแต่ละไม้ได้โดยตรง เพื่อดูยอดเงินคงเหลือและกำไร/ขาดทุน
+                </p>
+              </div>
+              <button type="button" onclick="openRecordModal('เงินลงทุนหุ้น')" class="px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 active:scale-95 text-white font-extrabold text-xs transition flex items-center gap-1 shadow-sm">
+                <span>＋</span> ซื้อหุ้นเพิ่ม (ไม้ใหม่)
+              </button>
+            </div>
+
+            <div class="overflow-x-auto -mx-2 px-2">
+              <table class="w-full text-xs sm:text-sm border-collapse">
+                <thead>
+                  <tr class="bg-sky-50 text-sky-950 border-y border-sky-200 text-left">
+                    <th class="py-2.5 px-2 font-bold">ไม้ที่ / ชื่อย่อหุ้น</th>
+                    <th class="py-2.5 px-2 text-right font-bold">เงินที่ลง (ทุน)</th>
+                    <th class="py-2.5 px-2 text-right font-bold">ราคาซื้อ</th>
+                    <th class="py-2.5 px-2 text-right font-bold">ราคาปัจจุบัน (กรอกเอง)</th>
+                    <th class="py-2.5 px-2 text-right font-bold bg-sky-100/60">ยอดคงเหลือปัจจุบัน</th>
+                    <th class="py-2.5 px-2 text-right font-bold">กำไร/ขาดทุน</th>
+                    <th class="py-2.5 px-2 text-center font-bold">จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody id="stockLotsTableBody" class="divide-y divide-slate-100 num-font">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ฝั่งขวา (5 cols): ตารางสรุปสถานะพอร์ตการเงิน (ชีต1) & รายการบันทึกล่าสุด -->
+        <div class="lg:col-span-5 space-y-5">
+          <div class="bg-white rounded-[24px] p-4 sm:p-6 card-shadow border border-slate-200">
+            <div class="flex items-center justify-between mb-3">
+              <div>
+                <h2 class="text-base sm:text-lg font-extrabold text-slate-900 flex items-center gap-2">
+                  <span>📌</span> ตารางสรุปสถานะพอร์ต (ตรงกับ ชีต1)
+                </h2>
+                <p class="text-xs text-slate-500">คำนวณอัตโนมัติทั้งตามต้นทุนและมูลค่าตลาดปัจจุบัน</p>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-xs sm:text-sm border-collapse">
+                <thead>
+                  <tr class="bg-slate-100 text-slate-700 border-y border-slate-200">
+                    <th class="py-2.5 px-2.5 text-left font-bold">รายการสินทรัพย์ / เงินทุน</th>
+                    <th class="py-2.5 px-2 text-right font-bold">ตั้งต้น</th>
+                    <th class="py-2.5 px-2 text-right font-bold">เคลื่อนไหว</th>
+                    <th class="py-2.5 px-2.5 text-right font-bold">สุทธิปัจจุบัน</th>
+                  </tr>
+                </thead>
+                <tbody id="sheet1SummaryBody" class="divide-y divide-slate-100 num-font">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Recent Transactions Quick View -->
+          <div class="bg-white rounded-[24px] p-4 sm:p-6 card-shadow border border-slate-200">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-sm sm:text-base font-extrabold text-slate-900 flex items-center gap-1.5">
+                <span>⚡</span> รายการบันทึกล่าสุด
+              </h3>
+              <button type="button" onclick="switchTab('history')" class="text-xs font-bold text-emerald-700 hover:underline">
+                ดูทั้งหมด & เวลาที่ใช้ →
+              </button>
+            </div>
+            <div id="recentTxList" class="space-y-2.5">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 2: หน้ารายละเอียดของการใช้ (แต่ละเดือนใช้อะไรไปเท่าไร ตอนกี่โมง)       -->
+    <!-- ========================================================================= -->
+    <section id="viewHistory" class="hidden space-y-5">
+
+      <!-- Filter & Monthly Expense Summary Header -->
+      <div class="bg-white rounded-[24px] p-4 sm:p-6 card-shadow border border-slate-200 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 class="text-base sm:text-xl font-extrabold text-slate-900 flex items-center gap-2">
+              <span>🕒</span> รายละเอียดการใช้เงินและความเคลื่อนไหว (แยกตามเดือน & เวลา)
+            </h2>
+            <p class="text-xs sm:text-sm text-slate-500 mt-0.5">
+              ตรวจสอบย้อนหลังว่าแต่ละเดือนใช้อะไรไปเท่าไรบ้าง และบันทึกไว้ตอนกี่โมง (Timestamp)
+            </p>
+          </div>
+
+          <!-- Quick Mode Toggle: ดูเฉพาะการใช้เงิน vs ดูทุกหมวด -->
+          <div class="inline-flex p-1 rounded-xl bg-slate-100 border border-slate-200 w-full sm:w-auto">
+            <button type="button" id="filterQuickAll" onclick="setHistoryQuickFilter('ALL')" class="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-slate-900 shadow-sm transition">
+              📋 ดูทุกประเภทรายการ
+            </button>
+            <button type="button" id="filterQuickExpense" onclick="setHistoryQuickFilter('EXPENSE_ONLY')" class="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition">
+              💸 ดูเฉพาะเงินที่ใช้ออกไป / ถอนใช้
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter Controls Bar -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-slate-100">
+          <div>
+            <label for="filterMonthSelect" class="block text-xs font-bold text-slate-600 mb-1">📅 เลือกเดือนที่ต้องการดู:</label>
+            <select id="filterMonthSelect" onchange="renderHistoryView()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-bold text-slate-900 bg-white">
+              <option value="ALL">ทุกเดือนทั้งหมด</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="filterCategorySelect" class="block text-xs font-bold text-slate-600 mb-1">🏷️ กรองตามประเภทรายการ:</label>
+            <select id="filterCategorySelect" onchange="renderHistoryView()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-bold text-slate-900 bg-white">
+              <option value="ALL">ทุกประเภทรายการ</option>
+              <option value="เงินที่ใช้ออกไป / ถอนใช้">💸 เงินที่ใช้ออกไป / ถอนใช้</option>
+              <option value="เงินลงทุนทองคำ">🥇 เงินลงทุนทองคำ</option>
+              <option value="เงินลงทุนหุ้น">📊 เงินลงทุนหุ้น</option>
+              <option value="ถอนทุนคืนทองคำ">🔄 ถอนทุนคืนทองคำ</option>
+              <option value="ถอนทุนคืนหุ้น">🔄 ถอนทุนคืนหุ้น</option>
+              <option value="กำไร / เงินปันผลสะสม">📈 กำไร / เงินปันผลสะสม</option>
+              <option value="ขาดทุนจากการลงทุน">📉 ขาดทุนจากการลงทุน</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="filterSearchInput" class="block text-xs font-bold text-slate-600 mb-1">🔍 ค้นหารายละเอียด / หมายเหตุ:</label>
+            <input type="text" id="filterSearchInput" oninput="renderHistoryView()" placeholder="พิมพ์คำค้นหา เช่น ค่าใช้จ่าย, ไม้ที่ 1, ADVANC..." class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900" />
+          </div>
+        </div>
+
+        <!-- Monthly Filtered Summary Banner -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+          <div class="rounded-2xl bg-orange-50 border border-orange-200 p-3">
+            <div class="text-[11px] font-bold text-orange-800">💸 ยอดใช้ออกไป (ในเดือนที่เลือก)</div>
+            <div id="histSumExpense" class="num-font text-lg sm:text-xl font-extrabold text-orange-700 mt-1">฿10,000.00</div>
+            <div id="histCountExpense" class="text-[11px] text-orange-600 mt-0.5">1 รายการ</div>
+          </div>
+
+          <div class="rounded-2xl bg-amber-50 border border-amber-200 p-3">
+            <div class="text-[11px] font-bold text-amber-900">🥇+📊 ยอดนำไปลงทุน</div>
+            <div id="histSumInvest" class="num-font text-lg sm:text-xl font-extrabold text-amber-800 mt-1">฿350,000.00</div>
+            <div id="histSubWithdraw" class="text-[11px] text-amber-700 mt-0.5">ถอนทุนคืน: ฿0.00</div>
+          </div>
+
+          <div class="rounded-2xl bg-emerald-50 border border-emerald-200 p-3">
+            <div class="text-[11px] font-bold text-emerald-900">📈 กำไรสะสม (ในเดือนที่เลือก)</div>
+            <div id="histSumProfit" class="num-font text-lg sm:text-xl font-extrabold text-emerald-700 mt-1">+฿25,000.00</div>
+            <div class="text-[11px] text-emerald-600 mt-0.5">เงินปันผล / กำไร</div>
+          </div>
+
+          <div class="rounded-2xl bg-rose-50 border border-rose-200 p-3">
+            <div class="text-[11px] font-bold text-rose-900">📉 ขาดทุน (ในเดือนที่เลือก)</div>
+            <div id="histSumLoss" class="num-font text-lg sm:text-xl font-extrabold text-rose-600 mt-1">-฿0.00</div>
+            <div class="text-[11px] text-rose-600 mt-0.5">ขาดทุนจากการลงทุน</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detailed Transaction Table with Date & Exact Time (ตอนกี่โมง) -->
+      <div class="bg-white rounded-[24px] p-4 sm:p-6 card-shadow border border-slate-200">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+          <h3 class="text-sm sm:text-base font-extrabold text-slate-900">
+            📋 รายการบันทึกตามวันและเวลาจริง (แสดงวันที่ และ เวลาตอนกี่โมง)
+          </h3>
+          <span id="histTotalRowsLabel" class="text-xs font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-700">
+            ทั้งหมด 8 รายการ
+          </span>
+        </div>
+
+        <div class="overflow-x-auto -mx-2 px-2">
+          <table class="w-full text-xs sm:text-sm border-collapse">
+            <thead>
+              <tr class="bg-slate-100 text-slate-700 border-y border-slate-200 text-left">
+                <th class="py-3 px-2.5 font-bold">วันที่บันทึก</th>
+                <th class="py-3 px-2.5 font-bold">🕒 เวลา (ตอนกี่โมง)</th>
+                <th class="py-3 px-2.5 font-bold">ประเภทรายการ</th>
+                <th class="py-3 px-2.5 font-bold">รายละเอียดรายการ</th>
+                <th class="py-3 px-2.5 font-bold text-right">จำนวนเงิน (บาท)</th>
+                <th class="py-3 px-2.5 font-bold">หมายเหตุ</th>
+                <th class="py-3 px-2.5 font-bold text-center">จัดการ</th>
+              </tr>
+            </thead>
+            <tbody id="historyTableBody" class="divide-y divide-slate-100">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 3: หน้าสถิติและการวิเคราะห์รายเดือน (ตรงกับแท็บ สถิติและการวิเคราะห์)  -->
+    <!-- ========================================================================= -->
+    <section id="viewStats" class="hidden space-y-5">
+
+      <!-- Charts Row -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <div class="lg:col-span-8 bg-white rounded-[24px] p-4 sm:p-6 card-shadow border border-slate-200">
+          <div class="mb-3">
+            <h2 class="text-base sm:text-lg font-extrabold text-slate-900">
+              📊 กราฟเปรียบเทียบความเคลื่อนไหวรายเดือนแยกตามประเภท
+            </h2>
+            <p class="text-xs text-slate-500">เปรียบเทียบยอดลงทุน ถอนทุน กำไร ขาดทุน และเงินที่ใช้ออกไปในแต่ละเดือน</p>
+          </div>
+          <div class="relative h-72 w-full">
+            <canvas id="monthlyBarChart"></canvas>
+          </div>
+        </div>
+
+        <div class="lg:col-span-4 bg-white rounded-[24px] p-4 sm:p-6 card-shadow border border-slate-200">
+          <div class="mb-3">
+            <h2 class="text-base sm:text-lg font-extrabold text-slate-900">
+              🥧 สัดส่วนเงินรวมสุทธิปัจจุบัน
+            </h2>
+            <p class="text-xs text-slate-500">เงินสดคงเหลือ เทียบกับ มูลค่าทองคำ และ มูลค่าหุ้นปัจจุบัน</p>
+          </div>
+          <div class="relative h-72 w-full">
+            <canvas id="portfolioDoughnutChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Monthly Statistics Table (Matches Tab 2 of Google Sheet) -->
+      <div class="bg-white rounded-[24px] p-4 sm:p-6 card-shadow border border-slate-200">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 class="text-base sm:text-lg font-extrabold text-slate-900">
+              📑 ตารางสถิติและการวิเคราะห์การเปลี่ยนแปลงสินทรัพย์รายเดือน (Monthly Statistics)
+            </h2>
+            <p class="text-xs text-slate-500">โครงสร้างเดียวกับแท็บ "สถิติและการวิเคราะห์" ใน Google Sheet เงินป้าเล็ก</p>
+          </div>
+          <div>
+            <label for="statsYearFilter" class="text-xs font-bold text-slate-600 mr-1.5">ปีที่แสดง:</label>
+            <select id="statsYearFilter" onchange="renderStatsView()" class="px-3 py-1.5 rounded-xl border border-slate-300 font-bold text-slate-900 bg-white">
+              <option value="ALL">ทุกปี (รวม 2026-09 ถึง 2026-12)</option>
+              <option value="2026">ปี 2026</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto -mx-2 px-2">
+          <table class="w-full text-xs sm:text-sm border-collapse">
+            <thead>
+              <tr class="bg-slate-800 text-white">
+                <th class="py-3 px-3 text-left font-bold rounded-tl-xl">เดือน (Month)</th>
+                <th class="py-3 px-3 text-right font-bold">เงินลงทุนทองคำ</th>
+                <th class="py-3 px-3 text-right font-bold">เงินลงทุนหุ้น</th>
+                <th class="py-3 px-3 text-right font-bold">ถอนทุนคืน / ขายสินทรัพย์</th>
+                <th class="py-3 px-3 text-right font-bold text-emerald-300">กำไร / ปันผลสะสม</th>
+                <th class="py-3 px-3 text-right font-bold text-rose-300">ขาดทุนจากการลงทุน</th>
+                <th class="py-3 px-3 text-right font-bold text-orange-300">เงินที่ใช้ออกไป / ถอนใช้</th>
+                <th class="py-3 px-3 text-right font-bold rounded-tr-xl bg-slate-900">ยอดความเคลื่อนไหวรวม</th>
+              </tr>
+            </thead>
+            <tbody id="monthlyStatsTableBody" class="divide-y divide-slate-200 num-font">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 4: เชื่อมข้อมูลกับ Google Sheet เงินป้าเล็ก & จัดการข้อมูล            -->
+    <!-- ========================================================================= -->
+    <section id="viewSheet" class="hidden space-y-5">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+
+        <!-- Left: Google Sheet Live Sync Setup (7 cols) -->
+        <div class="lg:col-span-7 bg-white rounded-[24px] p-4 sm:p-6 card-shadow border border-slate-200 space-y-4">
+          <div>
+            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
+              📗 ฐานข้อมูลกลาง Google Sheet
+            </span>
+            <h2 class="text-base sm:text-xl font-extrabold text-slate-900 mt-1">
+              เชื่อมข้อมูลกับชีต "เงินป้าเล็ก"
+            </h2>
+            <p class="text-xs sm:text-sm text-slate-600 mt-0.5">
+              เชื่อมต่อกับ Google Sheet <a href="https://docs.google.com/spreadsheets/d/1oRr9HCFZ0fI_hM1b5gpRG7eue6vKAVGrJp1Fv0Udm64/edit" target="_blank" rel="noopener noreferrer" class="text-emerald-700 font-bold underline">เงินป้าเล็ก</a> เพื่อสำรองรายการบันทึกทั้งหมดลงในชีตกลาง
+            </p>
+          </div>
+
+          <!-- Web App URL Input -->
+          <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+            <label for="inputScriptUrl" class="block text-xs sm:text-sm font-bold text-slate-800">
+              🔗 วางลิงก์ Google Apps Script Web App URL:
+            </label>
+            <div class="flex flex-wrap sm:flex-nowrap gap-2">
+              <input type="url" id="inputScriptUrl" placeholder="https://script.google.com/macros/s/.../exec" class="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 bg-white" />
+              <button type="button" onclick="saveScriptUrl()" class="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-bold transition">
+                บันทึก URL
+              </button>
+            </div>
+            <div class="flex flex-wrap gap-2 pt-1">
+              <button type="button" onclick="syncToGoogleSheetNow()" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center gap-1.5">
+                <span>☁️</span> ส่งข้อมูลทั้งหมดไปอัปเดตใน Google Sheet ทันที
+              </button>
+              <button type="button" onclick="pullFromGoogleSheetNow()" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition flex items-center gap-1.5">
+                <span>📥</span> ดึงข้อมูลล่าสุดจาก Google Sheet
+              </button>
+            </div>
+          </div>
+
+          <!-- Ready-to-use Apps Script Code -->
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-800">📜 โค้ดสำหรับวางในเมนู Extensions &gt; Apps Script ของชีต เงินป้าเล็ก:</span>
+              <button type="button" onclick="copyAppsScriptCode()" class="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold transition">
+                📋 คัดลอกโค้ด Apps Script
+              </button>
+            </div>
+            <pre id="appsScriptCodeBlock" class="bg-slate-900 text-emerald-300 p-4 rounded-2xl text-xs overflow-x-auto leading-relaxed num-font">function doGet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('ชีต1');
+  const lastRow = Math.max(sheet.getLastRow(), 4);
+  const rows = lastRow > 4 ? sheet.getRange(5, 6, lastRow - 4, 5).getValues() : [];
+  const data = rows.filter(r => r[0] && r[1]).map(r => ({
+    timestamp: Utilities.formatDate(new Date(r[0]), 'Asia/Bangkok', 'yyyy-MM-dd HH:mm:ss'),
+    category: String(r[1]),
+    detail: String(r[2] || ''),
+    amount: Number(r[3] || 0),
+    note: String(r[4] || '')
+  }));
+  return ContentService.createTextOutput(JSON.stringify({ status: 'ok', transactions: data }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('ชีต1');
+  const payload = JSON.parse(e.postData.contents);
+  if (payload.action === 'replaceAll' && Array.isArray(payload.transactions)) {
+    sheet.getRange('F5:J500').clearContent();
+    if (payload.transactions.length > 0) {
+      const values = payload.transactions.map(t => [t.timestamp, t.category, t.detail, Number(t.amount), t.note]);
+      sheet.getRange(5, 6, values.length, 5).setValues(values);
+    }
+  } else if (payload.transaction) {
+    const t = payload.transaction;
+    const colF = sheet.getRange('F5:F500').getValues();
+    let nextRow = 5;
+    while (nextRow - 5 < colF.length && colF[nextRow - 5][0] !== '') nextRow++;
+    sheet.getRange(nextRow, 6, 1, 5).setValues([[t.timestamp, t.category, t.detail, Number(t.amount), t.note]]);
+  }
+  return ContentService.createTextOutput(JSON.stringify({ status: 'ok' }))
+    .setMimeType(ContentService.MimeType.JSON);
+}</pre>
+          </div>
+        </div>
+
+        <!-- Right: Sample Data Management & CSV Import/Export (5 cols) -->
+        <div class="lg:col-span-5 space-y-5">
+          <div class="bg-white rounded-[24px] p-4 sm:p-6 card-shadow border border-slate-200 space-y-4">
+            <h3 class="text-base sm:text-lg font-extrabold text-slate-900 flex items-center gap-2">
+              <span>🛠️</span> จัดการข้อมูลตัวอย่าง & สำรองข้อมูล
+            </h3>
+            <p class="text-xs sm:text-sm text-slate-600">
+              กดล้างรายการตัวอย่างเพื่อเริ่มบันทึกจริงจากศูนย์ หรือดึงรายการตัวอย่าง (ทองคำ 3 ไม้ + หุ้น 3 ไม้ + กำไร + ค่าใช้จ่าย) กลับมาทดสอบได้ตลอดเวลา
+            </p>
+
+            <div class="space-y-2.5">
+              <button type="button" onclick="openConfirmModal('clearSample')" class="w-full py-3 px-4 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-sm transition flex items-center justify-center gap-2 shadow-sm">
+                <span>🧹</span> ล้างข้อมูลทั้งหมด (เริ่มบันทึกจริงจากศูนย์)
+              </button>
+
+              <button type="button" onclick="openConfirmModal('restoreSample')" class="w-full py-3 px-4 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm transition flex items-center justify-center gap-2 shadow-sm">
+                <span>🔄</span> โหลดข้อมูลตัวอย่าง 4 รายการจากชีตกลับมาใหม่
+              </button>
+            </div>
+
+            <div class="pt-4 border-t border-slate-100 space-y-2.5">
+              <div class="text-xs font-bold text-slate-700">📦 ส่งออก / นำเข้าไฟล์ CSV (รองรับ Google Sheets):</div>
+              <div class="grid grid-cols-2 gap-2.5">
+                <button type="button" onclick="exportCsvFile()" class="py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs sm:text-sm transition flex items-center justify-center gap-1.5">
+                  <span>📥</span> ดาวน์โหลด CSV
+                </button>
+                <label class="py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs sm:text-sm transition flex items-center justify-center gap-1.5 cursor-pointer">
+                  <span>📤</span> นำเข้า CSV
+                  <input type="file" id="csvFileInput" accept=".csv" onchange="importCsvFile(event)" class="hidden" />
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ========================================================================= -->
+  <!-- iOS SHEET POP-UP MODAL: บันทึกรายการเคลื่อนไหวใหม่ (เปิดเมื่อกดปุ่ม +)       -->
+  <!-- ========================================================================= -->
+  <div id="recordModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-t-[28px] sm:rounded-3xl max-w-2xl w-full p-5 sm:p-7 card-shadow border border-slate-200 max-h-[92vh] overflow-y-auto">
+      <!-- iOS Bottom Sheet Drag Handle -->
+      <div class="w-12 h-1.5 bg-slate-300 rounded-full mx-auto mb-3 sm:hidden"></div>
+
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3.5 mb-4">
+        <div>
+          <h2 class="text-lg sm:text-xl font-extrabold text-slate-900 flex items-center gap-2">
+            <span class="w-8 h-8 rounded-xl bg-emerald-600 text-white inline-flex items-center justify-center font-black">＋</span>
+            บันทึกรายการเคลื่อนไหวใหม่
+          </h2>
+          <p class="text-xs text-slate-500 mt-0.5">เลือกหมวดหมู่ กรอกจำนวนเงิน แล้วกดบันทึกได้ทันที</p>
+        </div>
+        <button type="button" onclick="closeRecordModal()" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-base flex items-center justify-center">
+          ✕
+        </button>
+      </div>
+
+      <!-- Step 1: Category Selector Grid -->
+      <div class="mb-4">
+        <label class="block text-xs sm:text-sm font-bold text-slate-700 mb-2">1. แตะเลือกประเภทรายการที่ต้องการบันทึก:</label>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <button type="button" id="catBtn_gold" onclick="selectEntryMode('เงินลงทุนทองคำ')" class="cat-btn text-left p-3 rounded-2xl border-2 border-amber-500 bg-amber-50/70 ring-amber-400 active">
+            <div class="text-lg mb-0.5">🥇</div>
+            <div class="font-bold text-xs sm:text-sm text-slate-900">เงินลงทุนทองคำ</div>
+            <div class="text-xs text-slate-500">นำเงินสดไปซื้อทองคำ</div>
+          </button>
+
+          <button type="button" id="catBtn_stock" onclick="selectEntryMode('เงินลงทุนหุ้น')" class="cat-btn text-left p-3 rounded-2xl border-2 border-slate-200 hover:border-sky-400 bg-white">
+            <div class="text-lg mb-0.5">📊</div>
+            <div class="font-bold text-xs sm:text-sm text-slate-900">เงินลงทุนหุ้น</div>
+            <div class="text-xs text-slate-500">นำเงินสดไปลงทุนหุ้น</div>
+          </button>
+
+          <button type="button" id="catBtn_withdraw" onclick="selectEntryMode('ถอนทุนคืน / ขายสินทรัพย์')" class="cat-btn text-left p-3 rounded-2xl border-2 border-slate-200 hover:border-indigo-400 bg-white">
+            <div class="text-lg mb-0.5">🔄</div>
+            <div class="font-bold text-xs sm:text-sm text-indigo-900">ถอนทุนคืน / ขายสินทรัพย์</div>
+            <div class="text-xs text-indigo-600 font-medium">ขายเป็นเงินสด + แยกกำไร/ขาดทุน</div>
+          </button>
+
+          <button type="button" id="catBtn_profit" onclick="selectEntryMode('กำไร / เงินปันผลสะสม')" class="cat-btn text-left p-3 rounded-2xl border-2 border-slate-200 hover:border-emerald-400 bg-white">
+            <div class="text-lg mb-0.5">📈</div>
+            <div class="font-bold text-xs sm:text-sm text-emerald-900">กำไร / เงินปันผลสะสม</div>
+            <div class="text-xs text-slate-500">รับกำไรหรือเงินปันผล</div>
+          </button>
+
+          <button type="button" id="catBtn_loss" onclick="selectEntryMode('ขาดทุนจากการลงทุน')" class="cat-btn text-left p-3 rounded-2xl border-2 border-slate-200 hover:border-rose-400 bg-white">
+            <div class="text-lg mb-0.5">📉</div>
+            <div class="font-bold text-xs sm:text-sm text-rose-900">ขาดทุนจากการลงทุน</div>
+            <div class="text-xs text-slate-500">บันทึกผลขาดทุน</div>
+          </button>
+
+          <button type="button" id="catBtn_expense" onclick="selectEntryMode('เงินที่ใช้ออกไป / ถอนใช้')" class="cat-btn text-left p-3 rounded-2xl border-2 border-slate-200 hover:border-orange-400 bg-white">
+            <div class="text-lg mb-0.5">💸</div>
+            <div class="font-bold text-xs sm:text-sm text-orange-900">เงินที่ใช้ออกไป / ถอนใช้</div>
+            <div class="text-xs text-slate-500">เบิกถอนไปใช้จ่ายส่วนตัว</div>
+          </button>
+        </div>
+      </div>
+
+      <!-- ใช้ novalidate เพื่อไม่ให้ HTML5 Validation บล็อกการกดบันทึกเมื่อแผงย่อยถูกซ่อน -->
+      <form id="recordForm" novalidate onsubmit="handleFormSubmit(event)" class="space-y-4">
+
+        <!-- SPECIAL SUB-PANEL A: ข้อมูลซื้อทองคำรายไม้ (Gold Lot Fields) -->
+        <div id="goldLotFieldsPanel" class="rounded-2xl bg-amber-50/80 border border-amber-200 p-3.5 space-y-3">
+          <div class="text-xs sm:text-sm font-extrabold text-amber-950 flex items-center justify-between flex-wrap gap-1">
+            <span>🥇 รายละเอียดการซื้อทองคำไม้นี้ (ซื้อทีละไม้)</span>
+            <span id="goldLotCalcBadge" class="num-font text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-200/80 text-amber-950">
+              น้ำหนักทอง: 0.0000 บาททอง
+            </span>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label for="inputGoldLotName" class="block text-xs font-bold text-amber-900 mb-1">ชื่อไม้ / ครั้งที่ซื้อ:</label>
+              <input type="text" id="inputGoldLotName" placeholder="เช่น ไม้ที่ 4" oninput="updateLotPreviewCalc()" class="w-full px-3 py-2 rounded-xl border border-amber-300 font-bold text-slate-900 bg-white" />
+            </div>
+            <div>
+              <label for="inputGoldBuyPrice" class="block text-xs font-bold text-amber-900 mb-1">ราคาทองตอนที่ซื้อ (บาท / 1 บาททองคำ):</label>
+              <input type="number" id="inputGoldBuyPrice" step="any" inputmode="decimal" value="43650" oninput="updateLotPreviewCalc()" class="num-font w-full px-3 py-2 rounded-xl border border-amber-300 font-bold text-slate-900 bg-white" />
+            </div>
+          </div>
+        </div>
+
+        <!-- SPECIAL SUB-PANEL B: ข้อมูลซื้อหุ้นรายไม้ (Stock Lot Fields) -->
+        <div id="stockLotFieldsPanel" class="hidden rounded-2xl bg-sky-50/80 border border-sky-200 p-3.5 space-y-3">
+          <div class="text-xs sm:text-sm font-extrabold text-sky-950 flex items-center justify-between flex-wrap gap-1">
+            <span>📊 รายละเอียดการซื้อหุ้นไม้นี้ (ระบุชื่อย่อหุ้น & ราคาซื้อ)</span>
+            <span id="stockLotCalcBadge" class="num-font text-xs font-bold px-2.5 py-0.5 rounded-full bg-sky-200/80 text-sky-950">
+              จำนวน: 0.00 หุ้น
+            </span>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label for="inputStockTicker" class="block text-xs font-bold text-sky-900 mb-1">ชื่อย่อหุ้น (Ticker) <span class="text-rose-500">*</span>:</label>
+              <input type="text" id="inputStockTicker" placeholder="เช่น ADVANC, PTT" oninput="this.value = this.value.toUpperCase(); updateLotPreviewCalc();" class="num-font w-full px-3 py-2 rounded-xl border border-sky-300 font-extrabold text-slate-900 bg-white uppercase" />
+            </div>
+            <div>
+              <label for="inputStockLotName" class="block text-xs font-bold text-sky-900 mb-1">ไม้ที่ / รอบที่ซื้อ:</label>
+              <input type="text" id="inputStockLotName" placeholder="เช่น ไม้ที่ 1" oninput="updateLotPreviewCalc()" class="w-full px-3 py-2 rounded-xl border border-sky-300 font-bold text-slate-900 bg-white" />
+            </div>
+            <div>
+              <label for="inputStockBuyPrice" class="block text-xs font-bold text-sky-900 mb-1">ราคาหุ้นตอนซื้อ (บาท/หุ้น):</label>
+              <input type="number" id="inputStockBuyPrice" step="any" inputmode="decimal" value="100" oninput="updateLotPreviewCalc()" class="num-font w-full px-3 py-2 rounded-xl border border-sky-300 font-bold text-slate-900 bg-white" />
+            </div>
+          </div>
+        </div>
+
+        <!-- SPECIAL SUB-PANEL C: ถอนทุนคืน / ขายสินทรัพย์เป็นเงินสด -->
+        <div id="withdrawSpecialPanel" class="hidden rounded-2xl bg-indigo-50/70 border-2 border-indigo-200 p-3.5 sm:p-5 space-y-3.5">
+          <div>
+            <h3 class="text-sm sm:text-base font-extrabold text-indigo-950 flex items-center gap-1.5">
+              <span>🔄</span> ตั้งค่าการถอนทุนคืน / ขายสินทรัพย์เป็นเงินสด
+            </h3>
+            <p class="text-xs text-indigo-700 mt-0.5">
+              นำเงินที่หักกำไร/ขาดทุนกลับเข้า <strong>เงินสดคงเหลือ</strong> และนำกำไร/ขาดทุนไปรวมตามหัวข้ออัตโนมัติ
+            </p>
+          </div>
+
+          <!-- เลือกสินทรัพย์ที่ขายคืน -->
+          <div>
+            <label class="block text-xs font-bold text-indigo-950 mb-1.5">เลือกสินทรัพย์ที่ต้องการขายคืนเป็นเงินสด:</label>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <button type="button" id="btnWithdrawAssetGold" onclick="setWithdrawAsset('ทองคำ')" class="p-3 rounded-xl border-2 border-indigo-600 bg-white text-left flex items-center justify-between">
+                <div>
+                  <div class="text-sm font-bold text-slate-900">🥇 เงินลงทุนทองคำ</div>
+                  <div class="text-xs text-slate-500">ทุนคงเหลือ: <span id="lblAvailGold" class="num-font font-bold text-amber-700">฿150,000.00</span></div>
+                </div>
+                <span class="text-xs font-bold px-2 py-0.5 rounded bg-indigo-100 text-indigo-800">เลือกอยู่</span>
+              </button>
+
+              <button type="button" id="btnWithdrawAssetStock" onclick="setWithdrawAsset('หุ้น')" class="p-3 rounded-xl border-2 border-slate-200 bg-white/70 text-left flex items-center justify-between">
+                <div>
+                  <div class="text-sm font-bold text-slate-900">📊 เงินลงทุนหุ้น</div>
+                  <div class="text-xs text-slate-500">ทุนคงเหลือ: <span id="lblAvailStock" class="num-font font-bold text-sky-700">฿200,000.00</span></div>
+                </div>
+                <span class="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600">คลิกเลือก</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- เลือกไม้ที่ต้องการขาย -->
+          <div>
+            <label for="selectLotToWithdraw" class="block text-xs font-bold text-indigo-950 mb-1">
+              🎯 เลือกขายจากไม้ที่ถืออยู่ (ดึงต้นทุนและกำไร/ขาดทุนตามราคาปัจจุบันให้ทันที):
+            </label>
+            <select id="selectLotToWithdraw" onchange="onSelectSpecificLotToWithdraw()" class="w-full px-3 py-2 rounded-xl border border-indigo-300 font-bold text-slate-900 bg-white">
+              <option value="CUSTOM">-- ระบุจำนวนเงินที่ถอน/ขายด้วยตัวเอง --</option>
+            </select>
+          </div>
+
+          <!-- เลือกผลลัพธ์: เท่าทุน / กำไร / ขาดทุน -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-indigo-950 mb-1.5">ผลการขายสินทรัพย์ครั้งนี้:</label>
+              <div class="grid grid-cols-3 gap-1.5">
+                <button type="button" id="pnlType_none" onclick="setWithdrawPnlType('none')" class="py-2 px-2 rounded-xl text-xs font-bold border-2 border-slate-300 bg-white text-slate-700">
+                  ⚪ เท่าทุน
+                </button>
+                <button type="button" id="pnlType_profit" onclick="setWithdrawPnlType('profit')" class="py-2 px-2 rounded-xl text-xs font-bold border-2 border-emerald-600 bg-emerald-600 text-white">
+                  🟢 ได้กำไร
+                </button>
+                <button type="button" id="pnlType_loss" onclick="setWithdrawPnlType('loss')" class="py-2 px-2 rounded-xl text-xs font-bold border-2 border-slate-300 bg-white text-rose-700">
+                  🔴 ขาดทุน
+                </button>
+              </div>
+            </div>
+
+            <div id="pnlAmountContainer">
+              <label id="lblPnlAmountInput" for="inputPnlAmount" class="block text-xs font-bold text-indigo-950 mb-1.5">
+                จำนวนเงินกำไรที่ได้ (บาท):
+              </label>
+              <input type="number" id="inputPnlAmount" step="any" inputmode="decimal" value="0" oninput="updateWithdrawPreview()" placeholder="เช่น 5000" class="num-font w-full px-3.5 py-2 rounded-xl border border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-slate-900 bg-white" />
+            </div>
+          </div>
+
+          <!-- ตัวเลือกวิธีหักยอด -->
+          <div class="bg-white/90 rounded-xl p-3 border border-indigo-200/80 space-y-2">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <span class="text-xs font-bold text-indigo-950">วิธีคำนวณเงินเข้า "เงินสดคงเหลือ":</span>
+              <div class="flex flex-wrap items-center gap-3 text-xs">
+                <label class="inline-flex items-center gap-1 cursor-pointer">
+                  <input type="radio" name="withdrawCalcMethod" value="deduct_from_input" checked onchange="updateWithdrawPreview()" class="text-indigo-600" />
+                  <span class="font-semibold text-slate-800">นำยอดที่กรอก หักกำไร/ขาดทุน เข้าเงินสดคงเหลือ</span>
+                </label>
+                <label class="inline-flex items-center gap-1 cursor-pointer">
+                  <input type="radio" name="withdrawCalcMethod" value="input_is_principal" onchange="updateWithdrawPreview()" class="text-indigo-600" />
+                  <span class="font-semibold text-slate-700">ยอดที่กรอกคือเงินต้นที่ตัดพอร์ตโดยตรง</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Live Calculation Breakdown Preview -->
+            <div id="withdrawPreviewBox" class="text-xs bg-indigo-950 text-white rounded-xl p-3 space-y-1">
+              <div class="font-bold text-indigo-200 mb-1">💡 สรุปผลลัพธ์ที่จะบันทึกเข้าพอร์ตอัตโนมัติ:</div>
+              <div id="previewLine1">• เงินต้นที่หักกำไร/ขาดทุนกลับเข้าเงินสดคงเหลือ: <strong>฿0.00</strong></div>
+              <div id="previewLine2">• บันทึกเพิ่มในหมวดกำไร / ขาดทุน: <strong>฿0.00</strong></div>
+              <div id="previewLine3">• รวมเงินสดในมือเปลี่ยนแปลงสุทธิ: <strong>฿0.00</strong></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Amount & Timestamp Row -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label id="lblMainAmount" for="inputAmount" class="block text-sm font-bold text-slate-700">
+                2. จำนวนเงิน (บาท) <span class="text-rose-500">*</span>
+              </label>
+              <button type="button" id="btnFillMaxWithdraw" onclick="fillMaxAssetAmount()" class="hidden text-xs font-bold text-indigo-600 hover:underline">
+                ดึงยอดคงเหลือทั้งหมด
+              </button>
+            </div>
+            <div class="relative">
+              <span class="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-slate-400">฿</span>
+              <input type="number" id="inputAmount" step="any" inputmode="decimal" oninput="updateWithdrawPreview(); updateLotPreviewCalc();" placeholder="0.00" class="num-font w-full pl-8 pr-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-lg font-extrabold text-slate-900" />
+            </div>
+            <!-- Quick Amount Chips -->
+            <div class="flex flex-wrap gap-1.5 mt-2">
+              <button type="button" onclick="setQuickAmount(500)" class="num-font text-xs px-2.5 py-1 rounded-lg bg-slate-100 active:bg-slate-200 text-slate-700 font-semibold">+500</button>
+              <button type="button" onclick="setQuickAmount(1000)" class="num-font text-xs px-2.5 py-1 rounded-lg bg-slate-100 active:bg-slate-200 text-slate-700 font-semibold">+1,000</button>
+              <button type="button" onclick="setQuickAmount(5000)" class="num-font text-xs px-2.5 py-1 rounded-lg bg-slate-100 active:bg-slate-200 text-slate-700 font-semibold">+5,000</button>
+              <button type="button" onclick="setQuickAmount(10000)" class="num-font text-xs px-2.5 py-1 rounded-lg bg-slate-100 active:bg-slate-200 text-slate-700 font-semibold">+10,000</button>
+              <button type="button" onclick="setQuickAmount(50000)" class="num-font text-xs px-2.5 py-1 rounded-lg bg-slate-100 active:bg-slate-200 text-slate-700 font-semibold">+50,000</button>
+              <button type="button" onclick="setQuickAmount(100000)" class="num-font text-xs px-2.5 py-1 rounded-lg bg-slate-100 active:bg-slate-200 text-slate-700 font-semibold">+100,000</button>
+            </div>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label for="inputDatetime" class="block text-sm font-bold text-slate-700">
+                3. วัน-เวลาที่บันทึก (Timestamp)
+              </label>
+              <button type="button" onclick="setNowTimestamp()" class="text-xs font-bold text-emerald-700 hover:underline">
+                🕒 ใช้เวลาปัจจุบัน
+              </button>
+            </div>
+            <input type="datetime-local" id="inputDatetime" class="num-font w-full px-3.5 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-semibold text-slate-900" />
+            <p class="text-[11px] text-slate-500 mt-1">บันทึกทั้งวันที่และเวลาเพื่อดูย้อนหลังว่าใช้ตอนกี่โมง</p>
+          </div>
+        </div>
+
+        <!-- Description & Note Row + Quick Expense Presets -->
+        <div class="space-y-3">
+          <div id="quickDetailPresetsWrap" class="hidden">
+            <span class="block text-xs font-bold text-orange-800 mb-1.5">⚡ แตะเลือกรายละเอียดค่าใช้จ่ายด่วน (ไม่ต้องพิมพ์เอง):</span>
+            <div class="flex flex-wrap gap-1.5">
+              <button type="button" onclick="setQuickDetail('ค่าอาหารและของใช้เข้าบ้าน', 'ถอนเงินสด')" class="text-xs px-3 py-1.5 rounded-xl bg-orange-50 border border-orange-200 text-orange-900 font-bold active:scale-95">🍽️ ค่าอาหาร/ของใช้</button>
+              <button type="button" onclick="setQuickDetail('ค่ารักษาพยาบาล / ค่ายาป้าเล็ก', 'ถอนเงินสด')" class="text-xs px-3 py-1.5 rounded-xl bg-orange-50 border border-orange-200 text-orange-900 font-bold active:scale-95">🏥 ค่ายา/หาหมอ</button>
+              <button type="button" onclick="setQuickDetail('ค่าน้ำ ค่าไฟ ค่าโทรศัพท์', 'จ่ายบิลรายเดือน')" class="text-xs px-3 py-1.5 rounded-xl bg-orange-50 border border-orange-200 text-orange-900 font-bold active:scale-95">💡 ค่าน้ำ-ค่าไฟ</button>
+              <button type="button" onclick="setQuickDetail('ทำบุญ / ใส่ซองงานบุญ', 'ถอนเงินสด')" class="text-xs px-3 py-1.5 rounded-xl bg-orange-50 border border-orange-200 text-orange-900 font-bold active:scale-95">🧧 ทำบุญ/ใส่ซอง</button>
+              <button type="button" onclick="setQuickDetail('ค่าใช้จ่ายส่วนตัวป้าเล็ก', 'ถอนเงินสด')" class="text-xs px-3 py-1.5 rounded-xl bg-orange-50 border border-orange-200 text-orange-900 font-bold active:scale-95">💵 ใช้ส่วนตัวป้าเล็ก</button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div>
+              <label for="inputDetail" class="block text-sm font-bold text-slate-700 mb-1">
+                4. รายละเอียดรายการ (เว้นว่างได้ ระบบเติมให้อัตโนมัติ)
+              </label>
+              <input type="text" id="inputDetail" placeholder="เช่น ค่าใช้จ่ายส่วนตัวป้าเล็ก, ซื้อทองคำแท่ง" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900" />
+            </div>
+
+            <div>
+              <label for="inputNote" class="block text-sm font-bold text-slate-700 mb-1">
+                5. หมายเหตุเพิ่มเติม
+              </label>
+              <input type="text" id="inputNote" placeholder="เช่น ถอนเงินสด, เข้าบัญชีเงินสด" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900" />
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2.5">
+          <button type="submit" class="flex-1 min-w-[200px] py-3.5 px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-500 active:scale-98 text-white font-extrabold text-base shadow-md transition flex items-center justify-center gap-2">
+            <span>💾</span> บันทึกรายการลงระบบ & ชีต
+          </button>
+          <button type="button" onclick="resetEntryForm()" class="py-3.5 px-4 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition">
+            ล้างฟอร์ม
+          </button>
+          <button type="button" onclick="closeRecordModal()" class="py-3.5 px-4 rounded-2xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-sm transition">
+            ปิดหน้าต่าง
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: แก้ไขรายละเอียดไม้ (ราคาซื้อ / เงินต้น / ชื่อหุ้น ของแต่ละไม้)        -->
+  <!-- ========================================================================= -->
+  <div id="editLotModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white rounded-t-[28px] sm:rounded-3xl max-w-md w-full p-6 card-shadow border border-slate-200 space-y-4">
+      <h3 id="editLotModalTitle" class="text-lg font-extrabold text-slate-900">✏️ แก้ไขข้อมูลไม้ที่ลงทุน</h3>
+      <div class="space-y-3">
+        <div>
+          <label for="editLotNameInput" class="block text-xs font-bold text-slate-700 mb-1">ชื่อไม้ / รายละเอียด:</label>
+          <input type="text" id="editLotNameInput" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 font-bold text-slate-900" />
+        </div>
+        <div id="editLotTickerWrap" class="hidden">
+          <label for="editLotTickerInput" class="block text-xs font-bold text-slate-700 mb-1">ชื่อย่อหุ้น (Ticker):</label>
+          <input type="text" id="editLotTickerInput" oninput="this.value = this.value.toUpperCase()" class="num-font w-full px-3.5 py-2 rounded-xl border border-slate-300 font-extrabold text-slate-900 uppercase" />
+        </div>
+        <div>
+          <label for="editLotCostInput" class="block text-xs font-bold text-slate-700 mb-1">จำนวนเงินที่ลงทุนในไม้นี้ (บาท):</label>
+          <input type="number" id="editLotCostInput" step="any" inputmode="decimal" class="num-font w-full px-3.5 py-2 rounded-xl border border-slate-300 font-extrabold text-slate-900" />
+        </div>
+        <div>
+          <label id="editLotBuyPriceLabel" for="editLotBuyPriceInput" class="block text-xs font-bold text-slate-700 mb-1">ราคาซื้อต่อหน่วย (บาท):</label>
+          <input type="number" id="editLotBuyPriceInput" step="any" inputmode="decimal" class="num-font w-full px-3.5 py-2 rounded-xl border border-slate-300 font-extrabold text-slate-900" />
+        </div>
+      </div>
+      <div class="flex items-center justify-end gap-2 pt-2">
+        <button type="button" onclick="closeEditLotModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm">
+          ยกเลิก
+        </button>
+        <button type="button" onclick="saveEditedLot()" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm">
+          บันทึกการแก้ไขไม้
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: กรอกราคาทองคำ & ราคาหุ้นปัจจุบันแบบ Manual ทั้งหมดในที่เดียว          -->
+  <!-- ========================================================================= -->
+  <div id="geminiConfigModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-t-[28px] sm:rounded-3xl max-w-lg w-full p-6 card-shadow border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-extrabold text-slate-900">🏷️ กรอกราคาทองคำ & หุ้น ณ ปัจจุบัน (Manual)</h3>
+        <button type="button" onclick="closeGeminiConfigModal()" class="text-slate-400 hover:text-slate-700 font-bold">✕</button>
+      </div>
+
+      <p class="text-xs text-slate-600">
+        ใส่ราคาทองคำและราคาหุ้นแต่ละตัว ณ ปัจจุบันด้วยตัวเอง เมื่อกดบันทึก ระบบจะนำไปเทียบกับต้นทุนแต่ละไม้เพื่อคำนวณยอดเงินคงเหลือและกำไร/ขาดทุนทันที
+      </p>
+
+      <!-- ช่องกรอกราคาทองคำใน Modal -->
+      <div class="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 space-y-1.5">
+        <label for="modalGoldPriceInput" class="block text-xs font-extrabold text-amber-950">🥇 ราคาทองคำแท่ง ณ ปัจจุบัน (บาท / 1 บาททองคำ):</label>
+        <input type="number" id="modalGoldPriceInput" step="any" inputmode="decimal" class="num-font w-full px-3.5 py-2.5 rounded-xl border border-amber-300 bg-white font-extrabold text-slate-900" />
+      </div>
+
+      <!-- ช่องกรอกราคาหุ้นแต่ละตัวใน Modal -->
+      <div class="p-3.5 rounded-2xl bg-sky-50 border border-sky-200 space-y-2.5">
+        <div class="text-xs font-extrabold text-sky-950">📊 ราคาหุ้นแต่ละตัว ณ ปัจจุบัน (บาท / หุ้น):</div>
+        <div id="modalStockPricesList" class="space-y-2">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Optional Gemini API Key (ซ่อนไว้ด้านล่างเผื่อต้องการใช้) -->
+      <details class="text-xs text-slate-500 pt-1">
+        <summary class="cursor-pointer font-semibold text-slate-600">ตัวเลือกเสริม: ใช้ Gemini API Key ช่วยดึงราคา (ไม่บังคับ)</summary>
+        <div class="mt-2">
+          <label for="inputGeminiApiKey" class="block text-[11px] font-bold text-slate-600 mb-1">🔑 Gemini API Key:</label>
+          <input type="password" id="inputGeminiApiKey" placeholder="เว้นว่างไว้เพื่อใช้ราคาที่กรอกเอง (Manual)" class="num-font w-full px-3 py-2 rounded-xl border border-slate-300 text-slate-900" />
+        </div>
+      </details>
+
+      <div class="flex items-center justify-end gap-2 pt-2">
+        <button type="button" onclick="closeGeminiConfigModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm">
+          ปิด
+        </button>
+        <button type="button" onclick="saveGeminiConfigAndSync()" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm">
+          บันทึก & กด Sync ราคาตอนนี้
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL 1: ยืนยันการล้างข้อมูล / โหลดตัวอย่าง / ลบรายการ -->
+  <!-- ========================================== -->
+  <div id="confirmModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 card-shadow border border-slate-200 space-y-4">
+      <div class="flex items-center gap-3">
+        <div id="confirmModalIcon" class="w-11 h-11 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center text-xl font-bold">
+          ⚠️
+        </div>
+        <div>
+          <h3 id="confirmModalTitle" class="text-lg font-extrabold text-slate-900">ยืนยันการทำรายการ</h3>
+          <p id="confirmModalDesc" class="text-xs sm:text-sm text-slate-600 mt-0.5">คุณต้องการดำเนินการต่อหรือไม่?</p>
+        </div>
+      </div>
+      <div class="flex items-center justify-end gap-2.5 pt-2">
+        <button type="button" onclick="closeConfirmModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm">
+          ยกเลิก
+        </button>
+        <button type="button" id="confirmModalActionBtn" onclick="executeConfirmedAction()" class="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-sm">
+          ยืนยัน
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL 2: แก้ไขเงินต้นหลัก                     -->
+  <!-- ========================================== -->
+  <div id="principalModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 card-shadow border border-slate-200 space-y-4">
+      <h3 class="text-lg font-extrabold text-slate-900">⚙️ ตั้งค่ายอดเงินต้นหลักตั้งต้น</h3>
+      <p class="text-xs sm:text-sm text-slate-600">
+        ค่าเริ่มต้นตาม Google Sheet เงินป้าเล็ก คือ <strong>฿4,000,000.00</strong> คุณสามารถปรับยอดเงินต้นตั้งต้นได้ที่นี่
+      </p>
+      <div>
+        <label for="inputPrincipalModal" class="block text-xs font-bold text-slate-700 mb-1">จำนวนเงินต้นหลัก (บาท):</label>
+        <input type="number" id="inputPrincipalModal" step="any" inputmode="decimal" class="num-font w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-extrabold text-slate-900" />
+      </div>
+      <div class="flex items-center justify-end gap-2.5 pt-2">
+        <button type="button" onclick="closePrincipalModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm">
+          ยกเลิก
+        </button>
+        <button type="button" onclick="savePrincipalAmount()" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm">
+          บันทึกเงินต้นหลัก
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification (แสดงด้านบนสไตล์ iOS Dynamic Banner เพื่อไม่บังแถบเมนูด้านล่าง) -->
+  <div id="toastBox" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 hidden max-w-sm w-[92%] sm:w-auto bg-slate-900/95 text-white px-4 py-3 rounded-2xl shadow-2xl border border-slate-700 flex items-center justify-center gap-2.5 text-xs sm:text-sm font-bold">
+    <span id="toastIcon">✅</span>
+    <span id="toastMessage">บันทึกข้อมูลสำเร็จ</span>
+  </div>
+
+  <script>
+    // =========================================================================
+    // INITIAL SAMPLE DATA (ทองคำ 3 ไม้ ราคาไม่เท่ากัน รวม 150,000 + หุ้น 3 ไม้ รวม 200,000)
+    // =========================================================================
+    const DEFAULT_PRINCIPAL = 4000000;
+    const SAMPLE_TRANSACTIONS = [
+      {
+        id: 'sample-1',
+        timestamp: '2026-11-01 09:30:00',
+        category: 'เงินลงทุนทองคำ',
+        lotName: 'ไม้ที่ 1',
+        buyPrice: 40500,
+        detail: 'ไม้ที่ 1: ซื้อทองคำแท่ง (@฿40,500)',
+        amount: 50000,
+        note: 'บันทึกรายการตัวอย่าง (ไม้ 1)',
+        isSample: true
+      },
+      {
+        id: 'sample-gold-2',
+        timestamp: '2026-11-01 13:15:00',
+        category: 'เงินลงทุนทองคำ',
+        lotName: 'ไม้ที่ 2',
+        buyPrice: 41800,
+        detail: 'ไม้ที่ 2: ซื้อทองคำแท่ง (@฿41,800)',
+        amount: 50000,
+        note: 'บันทึกรายการตัวอย่าง (ไม้ 2)',
+        isSample: true
+      },
+      {
+        id: 'sample-gold-3',
+        timestamp: '2026-11-01 16:40:00',
+        category: 'เงินลงทุนทองคำ',
+        lotName: 'ไม้ที่ 3',
+        buyPrice: 43200,
+        detail: 'ไม้ที่ 3: ซื้อทองคำแท่ง (@฿43,200)',
+        amount: 50000,
+        note: 'บันทึกรายการตัวอย่าง (ไม้ 3)',
+        isSample: true
+      },
+      {
+        id: 'sample-2',
+        timestamp: '2026-11-02 10:15:00',
+        category: 'เงินลงทุนหุ้น',
+        ticker: 'ADVANC',
+        lotName: 'ไม้ที่ 1',
+        buyPrice: 275.00,
+        detail: 'ไม้ที่ 1: หุ้น ADVANC (@฿275.00)',
+        amount: 80000,
+        note: 'ลงทุนหุ้นพอร์ตหลัก DCA (ตัวอย่าง)',
+        isSample: true
+      },
+      {
+        id: 'sample-stock-2',
+        timestamp: '2026-11-02 11:30:00',
+        category: 'เงินลงทุนหุ้น',
+        ticker: 'PTT',
+        lotName: 'ไม้ที่ 2',
+        buyPrice: 32.50,
+        detail: 'ไม้ที่ 2: หุ้น PTT (@฿32.50)',
+        amount: 70000,
+        note: 'ลงทุนหุ้นพอร์ตหลัก DCA (ตัวอย่าง)',
+        isSample: true
+      },
+      {
+        id: 'sample-stock-3',
+        timestamp: '2026-11-02 14:20:00',
+        category: 'เงินลงทุนหุ้น',
+        ticker: 'SCB',
+        lotName: 'ไม้ที่ 3',
+        buyPrice: 112.00,
+        detail: 'ไม้ที่ 3: หุ้น SCB (@฿112.00)',
+        amount: 50000,
+        note: 'ลงทุนหุ้นพอร์ตหลัก DCA (ตัวอย่าง)',
+        isSample: true
+      },
+      {
+        id: 'sample-3',
+        timestamp: '2026-11-03 14:00:00',
+        category: 'กำไร / เงินปันผลสะสม',
+        detail: 'เงินปันผลและกำไรส่วนต่าง (ตัวอย่าง)',
+        amount: 25000,
+        note: 'เข้าบัญชีเงินสด',
+        isSample: true
+      },
+      {
+        id: 'sample-4',
+        timestamp: '2026-11-04 11:45:00',
+        category: 'เงินที่ใช้ออกไป / ถอนใช้',
+        detail: 'ค่าใช้จ่ายส่วนตัวป้าเล็ก (ตัวอย่าง)',
+        amount: 10000,
+        note: 'ถอนเงินสด',
+        isSample: true
+      }
+    ];
+
+    const DEFAULT_MARKET_PRICES = {
+      gold: 43650,
+      stocks: {
+        'ADVANC': 288.00,
+        'PTT': 34.25,
+        'SCB': 116.50
+      }
+    };
+
+    const STORAGE_KEY_TX = 'palek_wealth_transactions_v3';
+    const STORAGE_KEY_PRINCIPAL = 'palek_wealth_principal_v3';
+    const STORAGE_KEY_SCRIPT_URL = 'palek_wealth_script_url_v3';
+    const STORAGE_KEY_MARKET = 'palek_wealth_market_prices_v3';
+    const STORAGE_KEY_GEMINI = 'palek_wealth_gemini_key_v3';
+
+    let state = {
+      principal: DEFAULT_PRINCIPAL,
+      transactions: [],
+      marketPrices: JSON.parse(JSON.stringify(DEFAULT_MARKET_PRICES)),
+      selectedEntryMode: 'เงินลงทุนทองคำ',
+      withdrawAsset: 'ทองคำ',
+      withdrawPnlType: 'profit',
+      activeTab: 'record',
+      pendingConfirmAction: null,
+      pendingDeleteId: null,
+      editingLotId: null,
+      scriptUrl: '',
+      geminiApiKey: ''
+    };
+
+    let monthlyBarChartInstance = null;
+    let portfolioDoughnutInstance = null;
+
+    // =========================================================================
+    // STORAGE HELPERS (Sandboxed Safe)
+    // =========================================================================
+    function loadStateFromStorage() {
+      try {
+        const savedPrincipal = localStorage.getItem(STORAGE_KEY_PRINCIPAL);
+        if (savedPrincipal !== null && !isNaN(Number(savedPrincipal))) {
+          state.principal = Number(savedPrincipal);
+        }
+        const savedScript = localStorage.getItem(STORAGE_KEY_SCRIPT_URL);
+        if (savedScript) {
+          state.scriptUrl = savedScript;
+          const urlInput = document.getElementById('inputScriptUrl');
+          if (urlInput) urlInput.value = savedScript;
+        }
+        const savedGemini = localStorage.getItem(STORAGE_KEY_GEMINI);
+        if (savedGemini) {
+          state.geminiApiKey = savedGemini;
+        }
+        const savedMarket = localStorage.getItem(STORAGE_KEY_MARKET);
+        if (savedMarket) {
+          const parsedM = JSON.parse(savedMarket);
+          if (parsedM && parsedM.gold) {
+            state.marketPrices = {
+              gold: Number(parsedM.gold) || 43650,
+              stocks: { ...DEFAULT_MARKET_PRICES.stocks, ...(parsedM.stocks || {}) }
+            };
+          }
+        }
+        const savedTx = localStorage.getItem(STORAGE_KEY_TX);
+        if (savedTx) {
+          const parsed = JSON.parse(savedTx);
+          if (Array.isArray(parsed)) {
+            state.transactions = parsed;
+            return;
+          }
+        }
+      } catch (err) {}
+      state.transactions = SAMPLE_TRANSACTIONS.map(item => ({ ...item }));
+    }
+
+    function saveStateToStorage() {
+      try {
+        localStorage.setItem(STORAGE_KEY_PRINCIPAL, String(state.principal));
+        localStorage.setItem(STORAGE_KEY_TX, JSON.stringify(state.transactions));
+        localStorage.setItem(STORAGE_KEY_MARKET, JSON.stringify(state.marketPrices));
+      } catch (err) {}
+    }
+
+    // =========================================================================
+    // FORMATTING HELPERS
+    // =========================================================================
+    function formatBaht(num, showSign = false) {
+      const val = Number(num) || 0;
+      const absStr = Math.abs(val).toLocaleString('th-TH', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+      if (showSign) {
+        if (val > 0) return '+฿' + absStr;
+        if (val < 0) return '-฿' + absStr;
+      }
+      return (val < 0 ? '-฿' : '฿') + absStr;
+    }
+
+    function formatShortBaht(num) {
+      const val = Number(num) || 0;
+      return (val < 0 ? '-฿' : '฿') + Math.abs(val).toLocaleString('th-TH', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      });
+    }
+
+    function parseTimestampParts(tsStr) {
+      const clean = String(tsStr || '').trim().replace('T', ' ');
+      const parts = clean.split(' ');
+      const datePart = parts[0] || '2026-11-05';
+      const timePart = parts[1] || '00:00:00';
+      const [y, m, d] = datePart.split('-');
+      const monthsThai = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+      const monthName = monthsThai[(Number(m) || 1) - 1] || m;
+      return {
+        raw: clean,
+        monthKey: `${y}-${m}`,
+        yearKey: String(y),
+        thaiDate: `${Number(d)} ${monthName} ${y}`,
+        timeText: timePart.length === 5 ? timePart + ':00' : timePart
+      };
+    }
+
+    // =========================================================================
+    // PORTFOLIO & LOT-BY-LOT CALCULATION ENGINE
+    // =========================================================================
+    function calculatePortfolioMetrics() {
+      let goldBuy = 0;
+      let goldWithdraw = 0;
+      let stockBuy = 0;
+      let stockWithdraw = 0;
+      let profitTotal = 0;
+      let lossTotal = 0;
+      let expenseTotal = 0;
+
+      const goldLots = [];
+      const stockLots = [];
+
+      for (const tx of state.transactions) {
+        const amt = Number(tx.amount) || 0;
+        switch (tx.category) {
+          case 'เงินลงทุนทองคำ':
+            goldBuy += amt;
+            if (!tx.isSoldOut) {
+              const buyPrice = Number(tx.buyPrice) || 41500;
+              const weightBaht = buyPrice > 0 ? amt / buyPrice : 0;
+              const currentGoldPrice = Number(state.marketPrices.gold) || 43650;
+              const currentValue = weightBaht * currentGoldPrice;
+              const unrealizedPnl = currentValue - amt;
+              const unrealizedPct = amt > 0 ? (unrealizedPnl / amt) * 100 : 0;
+              goldLots.push({
+                ...tx,
+                buyPrice,
+                weightBaht,
+                currentPrice: currentGoldPrice,
+                currentValue,
+                unrealizedPnl,
+                unrealizedPct
+              });
+            }
+            break;
+          case 'ถอนทุนคืนทองคำ':
+            goldWithdraw += amt;
+            break;
+          case 'เงินลงทุนหุ้น':
+            stockBuy += amt;
+            if (!tx.isSoldOut) {
+              const ticker = String(tx.ticker || 'SET').toUpperCase();
+              const buyPrice = Number(tx.buyPrice) || 100;
+              const shares = buyPrice > 0 ? amt / buyPrice : 0;
+              if (state.marketPrices.stocks[ticker] === undefined) {
+                state.marketPrices.stocks[ticker] = buyPrice;
+              }
+              const currentPrice = Number(state.marketPrices.stocks[ticker]) || buyPrice;
+              const currentValue = shares * currentPrice;
+              const unrealizedPnl = currentValue - amt;
+              const unrealizedPct = amt > 0 ? (unrealizedPnl / amt) * 100 : 0;
+              stockLots.push({
+                ...tx,
+                ticker,
+                buyPrice,
+                shares,
+                currentPrice,
+                currentValue,
+                unrealizedPnl,
+                unrealizedPct
+              });
+            }
+            break;
+          case 'ถอนทุนคืนหุ้น':
+            stockWithdraw += amt;
+            break;
+          case 'กำไร / เงินปันผลสะสม':
+            profitTotal += amt;
+            break;
+          case 'ขาดทุนจากการลงทุน':
+            lossTotal += amt;
+            break;
+          case 'เงินที่ใช้ออกไป / ถอนใช้':
+            expenseTotal += amt;
+            break;
+        }
+      }
+
+      const goldNet = Math.max(0, goldBuy - goldWithdraw);
+      const stockNet = Math.max(0, stockBuy - stockWithdraw);
+
+      const rawGoldLotsCost = goldLots.reduce((s, l) => s + Number(l.amount || 0), 0);
+      const rawGoldLotsMarket = goldLots.reduce((s, l) => s + l.currentValue, 0);
+      const goldScale = rawGoldLotsCost > 0 ? (goldNet / rawGoldLotsCost) : 0;
+      const goldMarketValue = rawGoldLotsMarket * goldScale;
+      const goldUnrealizedPnl = goldMarketValue - goldNet;
+
+      const rawStockLotsCost = stockLots.reduce((s, l) => s + Number(l.amount || 0), 0);
+      const rawStockLotsMarket = stockLots.reduce((s, l) => s + l.currentValue, 0);
+      const stockScale = rawStockLotsCost > 0 ? (stockNet / rawStockLotsCost) : 0;
+      const stockMarketValue = rawStockLotsMarket * stockScale;
+      const stockUnrealizedPnl = stockMarketValue - stockNet;
+
+      const totalUnrealizedPnl = goldUnrealizedPnl + stockUnrealizedPnl;
+
+      const cashMovement = -goldNet - stockNet + profitTotal - lossTotal - expenseTotal;
+      const cashRemaining = state.principal + cashMovement;
+
+      const bookNetTotal = cashRemaining + goldNet + stockNet;
+      const marketNetTotal = cashRemaining + goldMarketValue + stockMarketValue;
+      const netDiffFromPrincipal = marketNetTotal - state.principal;
+
+      const totalEconomicProfit = (profitTotal - lossTotal) + totalUnrealizedPnl;
+      const roiPct = state.principal > 0 ? (totalEconomicProfit / state.principal) * 100 : 0;
+
+      return {
+        principal: state.principal,
+        goldBuy,
+        goldWithdraw,
+        goldNet,
+        goldMarketValue,
+        goldUnrealizedPnl,
+        goldLots,
+        stockBuy,
+        stockWithdraw,
+        stockNet,
+        stockMarketValue,
+        stockUnrealizedPnl,
+        stockLots,
+        totalUnrealizedPnl,
+        profitTotal,
+        lossTotal,
+        expenseTotal,
+        cashMovement,
+        cashRemaining,
+        bookNetTotal,
+        netTotal: marketNetTotal,
+        netDiffFromPrincipal,
+        roiPct
+      };
+    }
+
+    // =========================================================================
+    // UI RENDERING
+    // =========================================================================
+    function renderAll() {
+      const m = calculatePortfolioMetrics();
+
+      const hasSample = state.transactions.some(t => t.isSample);
+      const sampleBadge = document.getElementById('sampleBadge');
+      const btnClearHeader = document.getElementById('btnClearSampleHeader');
+      if (sampleBadge) sampleBadge.classList.toggle('hidden', !hasSample);
+      if (btnClearHeader) btnClearHeader.classList.toggle('hidden', state.transactions.length === 0);
+
+      const goldPriceInput = document.getElementById('inputCurrentGoldPrice');
+      if (goldPriceInput && document.activeElement !== goldPriceInput) {
+        goldPriceInput.value = state.marketPrices.gold;
+      }
+
+      document.getElementById('heroNetTotal').textContent = formatBaht(m.netTotal);
+      document.getElementById('heroBookNetTotal').textContent = formatBaht(m.bookNetTotal);
+      document.getElementById('heroUnrealizedBadge').textContent = formatBaht(m.totalUnrealizedPnl, true);
+      document.getElementById('heroUnrealizedBadge').className =
+        `num-font font-bold ${m.totalUnrealizedPnl >= 0 ? 'text-amber-300' : 'text-rose-300'}`;
+
+      const diffSign = m.netDiffFromPrincipal >= 0 ? '+' : '';
+      document.getElementById('heroNetDiffBadge').textContent = `${diffSign}${formatBaht(m.netDiffFromPrincipal)} จากเงินต้น`;
+
+      const roiSign = m.roiPct >= 0 ? '+' : '';
+      document.getElementById('heroRoiBadge').textContent = `📈 ROI รวม: ${roiSign}${m.roiPct.toFixed(2)}%`;
+
+      document.getElementById('heroSubCash').textContent = formatShortBaht(m.cashRemaining);
+      document.getElementById('heroSubGold').textContent = formatShortBaht(m.goldMarketValue);
+      document.getElementById('heroSubGoldPnl').textContent =
+        `ทุน ${formatShortBaht(m.goldNet)} (${formatBaht(m.goldUnrealizedPnl, true)})`;
+      document.getElementById('heroSubStock').textContent = formatShortBaht(m.stockMarketValue);
+      document.getElementById('heroSubStockPnl').textContent =
+        `ทุน ${formatShortBaht(m.stockNet)} (${formatBaht(m.stockUnrealizedPnl, true)})`;
+
+      document.getElementById('heroCashRemaining').textContent = formatBaht(m.cashRemaining);
+      document.getElementById('heroPrincipalVal').textContent = formatBaht(m.principal);
+      document.getElementById('heroCashFlowBadge').textContent = `เคลื่อนไหวสุทธิ ${formatBaht(m.cashMovement, true)}`;
+
+      const cashPct = m.principal > 0 ? Math.max(0, Math.min(100, (m.cashRemaining / m.principal) * 100)) : 0;
+      const investPct = Math.max(0, 100 - cashPct);
+      document.getElementById('heroCashPercent').textContent = `${cashPct.toFixed(2)}%`;
+      document.getElementById('barCashPct').style.width = `${cashPct}%`;
+      document.getElementById('barInvestPct').style.width = `${investPct}%`;
+
+      document.getElementById('miniProfitText').textContent = formatBaht(m.profitTotal);
+      document.getElementById('miniLossText').textContent = formatBaht(m.lossTotal);
+      document.getElementById('miniExpenseText').textContent = formatBaht(m.expenseTotal);
+
+      document.getElementById('cardGoldNet').textContent = formatBaht(m.goldMarketValue);
+      document.getElementById('cardGoldSub').textContent =
+        `ทุน ${formatShortBaht(m.goldNet)} | ${formatBaht(m.goldUnrealizedPnl, true)}`;
+
+      document.getElementById('cardStockNet').textContent = formatBaht(m.stockMarketValue);
+      document.getElementById('cardStockSub').textContent =
+        `ทุน ${formatShortBaht(m.stockNet)} | ${formatBaht(m.stockUnrealizedPnl, true)}`;
+
+      document.getElementById('cardProfitTotal').textContent = '+' + formatBaht(m.profitTotal);
+      document.getElementById('cardLossTotal').textContent = '-' + formatBaht(m.lossTotal);
+      document.getElementById('cardExpenseTotal').textContent = '-' + formatBaht(m.expenseTotal);
+
+      document.getElementById('summaryTotalInvestedCost').textContent = formatBaht(m.goldNet + m.stockNet);
+      document.getElementById('summaryTotalMarketValue').textContent = formatBaht(m.goldMarketValue + m.stockMarketValue);
+      const pnlEl = document.getElementById('summaryTotalUnrealizedPnl');
+      pnlEl.textContent = formatBaht(m.totalUnrealizedPnl, true);
+      pnlEl.className = `num-font text-xs sm:text-base font-extrabold mt-0.5 ${m.totalUnrealizedPnl >= 0 ? 'text-amber-300' : 'text-rose-400'}`;
+
+      document.getElementById('lblAvailGold').textContent = formatBaht(m.goldNet);
+      document.getElementById('lblAvailStock').textContent = formatBaht(m.stockNet);
+
+      renderManualStockPriceInputs(m);
+      renderGoldLotsTable(m);
+      renderStockLotsTable(m);
+      renderSheet1SummaryTable(m);
+      renderRecentTransactions();
+      populateMonthFilterOptions();
+      renderHistoryView();
+      renderStatsView();
+      populateWithdrawLotSelector(m);
+      updateWithdrawPreview();
+    }
+
+    function renderManualStockPriceInputs(m) {
+      const grid = document.getElementById('manualStockPriceInputsGrid');
+      if (!grid) return;
+      const tickers = Array.from(new Set(m.stockLots.map(l => l.ticker)));
+      if (tickers.length === 0) {
+        grid.innerHTML = `<div class="col-span-3 text-xs text-slate-500">ยังไม่มีหุ้นในพอร์ต เมื่อกดซื้อหุ้นจะแสดงช่องกรอกราคาปัจจุบันที่นี่</div>`;
+        return;
+      }
+
+      grid.innerHTML = tickers.map(tk => {
+        const curP = Number(state.marketPrices.stocks[tk]) || 0;
+        return `
+          <div class="bg-white rounded-xl p-2 border border-sky-200 flex items-center justify-between gap-1.5">
+            <span class="px-2 py-0.5 rounded bg-sky-900 text-white font-extrabold text-xs shrink-0">${tk}</span>
+            <div class="flex items-center gap-0.5 min-w-0">
+              <span class="text-xs text-slate-400 font-bold">฿</span>
+              <input type="number" step="any" inputmode="decimal" value="${curP}"
+                onchange="onManualStockPriceChange('${tk}', this.value)"
+                class="num-font w-20 px-1.5 py-1 rounded-lg border border-slate-200 text-right font-extrabold text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500" />
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderGoldLotsTable(m) {
+      const tbody = document.getElementById('goldLotsTableBody');
+      if (!tbody) return;
+      if (m.goldLots.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" class="py-6 text-center text-slate-400 text-xs">
+              ยังไม่มีรายการซื้อทองคำ กดปุ่ม "+ ซื้อทองเพิ่ม (ไม้ใหม่)" เพื่อบันทึกไม้แรกได้เลยครับ
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      const rowsHtml = m.goldLots.map((lot, idx) => {
+        const dt = parseTimestampParts(lot.timestamp);
+        const lotTitle = lot.lotName || `ไม้ที่ ${idx + 1}`;
+        const pnlColor = lot.unrealizedPnl >= 0 ? 'text-emerald-700' : 'text-rose-600';
+        const pnlSign = lot.unrealizedPnl >= 0 ? '+' : '';
+        return `
+          <tr class="hover:bg-amber-50/40 transition">
+            <td class="py-2.5 px-2">
+              <div class="font-extrabold text-slate-900">${lotTitle}</div>
+              <div class="text-[11px] text-slate-500">${dt.thaiDate}</div>
+            </td>
+            <td class="py-2.5 px-2 text-right font-bold text-slate-900">${formatBaht(lot.amount)}</td>
+            <td class="py-2.5 px-2 text-right text-slate-700">${formatShortBaht(lot.buyPrice)}</td>
+            <td class="py-2.5 px-2 text-right text-amber-900 font-semibold">${lot.weightBaht.toFixed(4)} บ.</td>
+            <td class="py-2.5 px-2 text-right font-extrabold text-slate-900 bg-amber-50/50">${formatBaht(lot.currentValue)}</td>
+            <td class="py-2.5 px-2 text-right font-bold ${pnlColor}">
+              <div>${formatBaht(lot.unrealizedPnl, true)}</div>
+              <div class="text-[11px]">(${pnlSign}${lot.unrealizedPct.toFixed(2)}%)</div>
+            </td>
+            <td class="py-2.5 px-2 text-center whitespace-nowrap space-x-1">
+              <button type="button" onclick="openEditLotModal('${lot.id}')" class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold">
+                ✏️ แก้ไข
+              </button>
+              <button type="button" onclick="quickSellSpecificLot('${lot.id}', 'ทองคำ')" class="px-2 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold">
+                💰 ขาย
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      const totalWeight = m.goldLots.reduce((s, l) => s + l.weightBaht, 0);
+      const avgBuyPrice = totalWeight > 0 ? (m.goldNet / totalWeight) : 0;
+      const totalPnlColor = m.goldUnrealizedPnl >= 0 ? 'text-emerald-300' : 'text-rose-300';
+
+      const footerHtml = `
+        <tr class="bg-slate-900 text-white font-extrabold text-xs">
+          <td class="py-2.5 px-2 rounded-bl-xl">รวมทองคำ (${m.goldLots.length} ไม้)</td>
+          <td class="py-2.5 px-2 text-right">${formatBaht(m.goldNet)}</td>
+          <td class="py-2.5 px-2 text-right text-amber-200">เฉลี่ย ${formatShortBaht(avgBuyPrice)}</td>
+          <td class="py-2.5 px-2 text-right text-amber-300">${totalWeight.toFixed(4)} บ.</td>
+          <td class="py-2.5 px-2 text-right text-emerald-300">${formatBaht(m.goldMarketValue)}</td>
+          <td class="py-2.5 px-2 text-right ${totalPnlColor}">${formatBaht(m.goldUnrealizedPnl, true)}</td>
+          <td class="py-2.5 px-2 rounded-br-xl"></td>
+        </tr>
+      `;
+      tbody.innerHTML = rowsHtml + footerHtml;
+    }
+
+    function renderStockLotsTable(m) {
+      const tbody = document.getElementById('stockLotsTableBody');
+      if (!tbody) return;
+      if (m.stockLots.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" class="py-6 text-center text-slate-400 text-xs">
+              ยังไม่มีรายการซื้อหุ้น กดปุ่ม "+ ซื้อหุ้นเพิ่ม (ไม้ใหม่)" เพื่อระบุชื่อย่อหุ้นได้เลยครับ
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      const rowsHtml = m.stockLots.map((lot, idx) => {
+        const dt = parseTimestampParts(lot.timestamp);
+        const lotTitle = lot.lotName || `ไม้ที่ ${idx + 1}`;
+        const pnlColor = lot.unrealizedPnl >= 0 ? 'text-emerald-700' : 'text-rose-600';
+        const pnlSign = lot.unrealizedPnl >= 0 ? '+' : '';
+        return `
+          <tr class="hover:bg-sky-50/40 transition">
+            <td class="py-2.5 px-2">
+              <div class="flex items-center gap-1.5">
+                <span class="px-2 py-0.5 rounded-md bg-sky-900 text-white font-extrabold text-xs">${lot.ticker}</span>
+                <span class="font-bold text-slate-900">${lotTitle}</span>
+              </div>
+              <div class="text-[11px] text-slate-500 mt-0.5">${dt.thaiDate} (${lot.shares.toFixed(1)} หุ้น)</div>
+            </td>
+            <td class="py-2.5 px-2 text-right font-bold text-slate-900">${formatBaht(lot.amount)}</td>
+            <td class="py-2.5 px-2 text-right text-slate-700">฿${lot.buyPrice.toFixed(2)}</td>
+            <td class="py-2.5 px-2 text-right">
+              <input type="number" step="any" inputmode="decimal" value="${lot.currentPrice}"
+                onchange="onManualStockPriceChange('${lot.ticker}', this.value)"
+                class="num-font w-20 px-2 py-1 rounded-lg border border-sky-300 bg-white text-right font-extrabold text-sky-950 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                title="กรอกราคาปัจจุบันของหุ้น ${lot.ticker}" />
+            </td>
+            <td class="py-2.5 px-2 text-right font-extrabold text-slate-900 bg-sky-50/50">${formatBaht(lot.currentValue)}</td>
+            <td class="py-2.5 px-2 text-right font-bold ${pnlColor}">
+              <div>${formatBaht(lot.unrealizedPnl, true)}</div>
+              <div class="text-[11px]">(${pnlSign}${lot.unrealizedPct.toFixed(2)}%)</div>
+            </td>
+            <td class="py-2.5 px-2 text-center whitespace-nowrap space-x-1">
+              <button type="button" onclick="openEditLotModal('${lot.id}')" class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold">
+                ✏️ แก้ไข
+              </button>
+              <button type="button" onclick="quickSellSpecificLot('${lot.id}', 'หุ้น')" class="px-2 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold">
+                💰 ขาย
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      const totalPnlColor = m.stockUnrealizedPnl >= 0 ? 'text-emerald-300' : 'text-rose-300';
+      const footerHtml = `
+        <tr class="bg-slate-900 text-white font-extrabold text-xs">
+          <td class="py-2.5 px-2 rounded-bl-xl">รวมหุ้น (${m.stockLots.length} ไม้)</td>
+          <td class="py-2.5 px-2 text-right">${formatBaht(m.stockNet)}</td>
+          <td class="py-2.5 px-2 text-right text-sky-200">-</td>
+          <td class="py-2.5 px-2 text-right text-sky-200">ราคาที่กรอก</td>
+          <td class="py-2.5 px-2 text-right text-emerald-300">${formatBaht(m.stockMarketValue)}</td>
+          <td class="py-2.5 px-2 text-right ${totalPnlColor}">${formatBaht(m.stockUnrealizedPnl, true)}</td>
+          <td class="py-2.5 px-2 rounded-br-xl"></td>
+        </tr>
+      `;
+      tbody.innerHTML = rowsHtml + footerHtml;
+    }
+
+    function renderSheet1SummaryTable(m) {
+      const rows = [
+        {
+          name: 'เงินต้นหลัก',
+          init: formatBaht(m.principal),
+          move: '-',
+          net: formatBaht(m.principal),
+          rowClass: 'font-semibold text-slate-900'
+        },
+        {
+          name: '🥇 เงินลงทุนทองคำ (มูลค่าปัจจุบัน)',
+          init: '-',
+          move: `ทุน ${formatShortBaht(m.goldNet)}`,
+          net: formatBaht(m.goldMarketValue),
+          rowClass: 'text-amber-900 font-medium'
+        },
+        {
+          name: '📊 เงินลงทุนหุ้น (มูลค่าปัจจุบัน)',
+          init: '-',
+          move: `ทุน ${formatShortBaht(m.stockNet)}`,
+          net: formatBaht(m.stockMarketValue),
+          rowClass: 'text-sky-900 font-medium'
+        },
+        {
+          name: '📈 กำไร / เงินปันผลสะสม (รับจริง)',
+          init: '-',
+          move: formatBaht(m.profitTotal),
+          net: formatBaht(m.profitTotal),
+          rowClass: 'text-emerald-700 font-medium'
+        },
+        {
+          name: '📉 ขาดทุนจากการลงทุน (รับจริง)',
+          init: '-',
+          move: formatBaht(m.lossTotal),
+          net: formatBaht(m.lossTotal),
+          rowClass: 'text-rose-600 font-medium'
+        },
+        {
+          name: '✨ กำไร/ขาดทุนตามราคาปัจจุบัน (ทอง+หุ้น)',
+          init: '-',
+          move: formatBaht(m.totalUnrealizedPnl, true),
+          net: formatBaht(m.totalUnrealizedPnl, true),
+          rowClass: m.totalUnrealizedPnl >= 0 ? 'text-emerald-700 font-bold bg-emerald-50/40' : 'text-rose-600 font-bold bg-rose-50/40'
+        },
+        {
+          name: '💸 เงินที่ใช้ออกไป / ถอนใช้',
+          init: '-',
+          move: formatBaht(m.expenseTotal),
+          net: formatBaht(m.expenseTotal),
+          rowClass: 'text-orange-600 font-medium'
+        },
+        {
+          name: '💵 เงินสดคงเหลือ',
+          init: formatBaht(m.principal),
+          move: m.cashMovement < 0 ? `(${formatBaht(Math.abs(m.cashMovement))})` : formatBaht(m.cashMovement),
+          net: formatBaht(m.cashRemaining),
+          rowClass: 'bg-blue-50/70 font-bold text-blue-950 border-t-2 border-slate-200'
+        },
+        {
+          name: '💰 เงินรวมสุทธิทั้งหมด (รวมราคาปัจจุบัน)',
+          init: formatBaht(m.principal),
+          move: formatBaht(m.netDiffFromPrincipal, true),
+          net: formatBaht(m.netTotal),
+          rowClass: 'bg-emerald-50 font-extrabold text-emerald-950'
+        },
+        {
+          name: '📈 อัตราผลตอบแทนรวม (ROI)',
+          init: '0.00%',
+          move: '-',
+          net: `${m.roiPct.toFixed(2)}%`,
+          rowClass: 'bg-slate-50 font-bold text-slate-800'
+        }
+      ];
+
+      const tbody = document.getElementById('sheet1SummaryBody');
+      tbody.innerHTML = rows.map(r => `
+        <tr class="${r.rowClass}">
+          <td class="py-2.5 px-2.5">${r.name}</td>
+          <td class="py-2.5 px-2 text-right">${r.init}</td>
+          <td class="py-2.5 px-2 text-right">${r.move}</td>
+          <td class="py-2.5 px-2.5 text-right font-bold">${r.net}</td>
+        </tr>
+      `).join('');
+    }
+
+    function getCategoryBadgeHtml(cat) {
+      const map = {
+        'เงินลงทุนทองคำ': 'bg-amber-100 text-amber-900 border-amber-200',
+        'เงินลงทุนหุ้น': 'bg-sky-100 text-sky-900 border-sky-200',
+        'ถอนทุนคืนทองคำ': 'bg-indigo-100 text-indigo-900 border-indigo-200',
+        'ถอนทุนคืนหุ้น': 'bg-indigo-100 text-indigo-900 border-indigo-200',
+        'กำไร / เงินปันผลสะสม': 'bg-emerald-100 text-emerald-900 border-emerald-200',
+        'ขาดทุนจากการลงทุน': 'bg-rose-100 text-rose-900 border-rose-200',
+        'เงินที่ใช้ออกไป / ถอนใช้': 'bg-orange-100 text-orange-900 border-orange-200'
+      };
+      const cls = map[cat] || 'bg-slate-100 text-slate-800 border-slate-200';
+      return `<span class="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold border ${cls}">${cat}</span>`;
+    }
+
+    function renderRecentTransactions() {
+      const container = document.getElementById('recentTxList');
+      const sorted = [...state.transactions].sort((a, b) => String(b.timestamp).localeCompare(String(a.timestamp)));
+      const recent = sorted.slice(0, 5);
+
+      if (recent.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-6 text-xs text-slate-400">
+            ยังไม่มีรายการบันทึก กดปุ่ม "+ บันทึกรายการใหม่" ด้านบนได้เลยครับ
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = recent.map(tx => {
+        const dt = parseTimestampParts(tx.timestamp);
+        return `
+          <div class="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between gap-2">
+            <div class="min-w-0">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                ${getCategoryBadgeHtml(tx.category)}
+                <span class="num-font text-[11px] text-slate-500 font-medium">${dt.thaiDate} • 🕒 ${dt.timeText} น.</span>
+              </div>
+              <div class="text-xs sm:text-sm font-bold text-slate-900 truncate mt-1">${tx.detail}</div>
+            </div>
+            <div class="num-font text-sm font-extrabold text-slate-900 whitespace-nowrap">
+              ${formatBaht(tx.amount)}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // =========================================================================
+    // POP-UP MODAL FOR RECORDING TRANSACTIONS (+) & BUG-FREE FORM SUBMISSION
+    // =========================================================================
+    function openRecordModal(defaultCategory) {
+      setNowTimestamp();
+      document.getElementById('inputAmount').value = '';
+      document.getElementById('inputDetail').value = '';
+      document.getElementById('inputNote').value = '';
+      if (defaultCategory) {
+        selectEntryMode(defaultCategory);
+      } else {
+        selectEntryMode(state.selectedEntryMode || 'เงินที่ใช้ออกไป / ถอนใช้');
+      }
+      document.getElementById('recordModal').classList.remove('hidden');
+      setTimeout(() => {
+        const amtInput = document.getElementById('inputAmount');
+        if (amtInput) amtInput.focus();
+      }, 120);
+    }
+
+    function closeRecordModal() {
+      document.getElementById('recordModal').classList.add('hidden');
+    }
+
+    function setQuickDetail(detailText, noteText) {
+      document.getElementById('inputDetail').value = detailText;
+      if (noteText) document.getElementById('inputNote').value = noteText;
+    }
+
+    function selectEntryMode(mode) {
+      state.selectedEntryMode = mode;
+      const btnMap = {
+        'เงินลงทุนทองคำ': 'catBtn_gold',
+        'เงินลงทุนหุ้น': 'catBtn_stock',
+        'ถอนทุนคืน / ขายสินทรัพย์': 'catBtn_withdraw',
+        'กำไร / เงินปันผลสะสม': 'catBtn_profit',
+        'ขาดทุนจากการลงทุน': 'catBtn_loss',
+        'เงินที่ใช้ออกไป / ถอนใช้': 'catBtn_expense'
+      };
+
+      Object.entries(btnMap).forEach(([key, id]) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (key === mode) {
+          el.className = 'cat-btn text-left p-3 rounded-2xl border-2 border-emerald-600 bg-emerald-50/80 ring-emerald-400 active';
+        } else {
+          el.className = 'cat-btn text-left p-3 rounded-2xl border-2 border-slate-200 hover:border-slate-300 bg-white';
+        }
+      });
+
+      const isGold = mode === 'เงินลงทุนทองคำ';
+      const isStock = mode === 'เงินลงทุนหุ้น';
+      const isWithdraw = mode === 'ถอนทุนคืน / ขายสินทรัพย์';
+      const isExpense = mode === 'เงินที่ใช้ออกไป / ถอนใช้';
+
+      document.getElementById('goldLotFieldsPanel').classList.toggle('hidden', !isGold);
+      document.getElementById('stockLotFieldsPanel').classList.toggle('hidden', !isStock);
+      document.getElementById('withdrawSpecialPanel').classList.toggle('hidden', !isWithdraw);
+      document.getElementById('btnFillMaxWithdraw').classList.toggle('hidden', !isWithdraw);
+      document.getElementById('quickDetailPresetsWrap').classList.toggle('hidden', !isExpense);
+
+      // ล้างข้อความอัตโนมัติของโหมดทอง/หุ้นเมื่อสลับมาหมวดค่าใช้จ่ายหรือกำไร/ขาดทุน
+      const detailEl = document.getElementById('inputDetail');
+      if (!isGold && !isStock && detailEl && detailEl.value.startsWith('ไม้ที่')) {
+        detailEl.value = '';
+      }
+
+      const m = calculatePortfolioMetrics();
+      if (isGold) {
+        const nextLotNum = m.goldLots.length + 1;
+        document.getElementById('inputGoldLotName').value = `ไม้ที่ ${nextLotNum}`;
+        document.getElementById('inputGoldBuyPrice').value = state.marketPrices.gold || 43650;
+      } else if (isStock) {
+        const nextLotNum = m.stockLots.length + 1;
+        document.getElementById('inputStockLotName').value = `ไม้ที่ ${nextLotNum}`;
+      }
+
+      const lblMainAmount = document.getElementById('lblMainAmount');
+      if (isWithdraw) {
+        lblMainAmount.innerHTML = '2. จำนวนเงินที่ถอน / ขายสินทรัพย์ (บาท) <span class="text-rose-500">*</span>';
+        detailEl.placeholder = 'เช่น ขายทองคำแท่งทำกำไร, ขายหุ้นบางส่วนกลับมาถือเงินสด';
+        populateWithdrawLotSelector(m);
+        updateWithdrawPreview();
+      } else if (isExpense) {
+        lblMainAmount.innerHTML = '2. จำนวนเงินที่ใช้จ่าย / ถอนใช้ (บาท) <span class="text-rose-500">*</span>';
+        detailEl.placeholder = 'เช่น ค่าใช้จ่ายส่วนตัวป้าเล็ก (ไม่กรอกก็ได้ ระบบใส่ให้อัตโนมัติ)';
+      } else {
+        lblMainAmount.innerHTML = `2. จำนวนเงิน (${mode}) (บาท) <span class="text-rose-500">*</span>`;
+        detailEl.placeholder = `ระบุรายละเอียดของ ${mode}`;
+        updateLotPreviewCalc();
+      }
+    }
+
+    function updateLotPreviewCalc() {
+      const amt = Number(document.getElementById('inputAmount')?.value) || 0;
+      if (state.selectedEntryMode === 'เงินลงทุนทองคำ') {
+        const buyP = Number(document.getElementById('inputGoldBuyPrice')?.value) || 43650;
+        const w = buyP > 0 ? amt / buyP : 0;
+        document.getElementById('goldLotCalcBadge').textContent = `น้ำหนักทอง: ${w.toFixed(4)} บาททอง`;
+        const lotName = document.getElementById('inputGoldLotName')?.value || 'ไม้ใหม่';
+        const detailEl = document.getElementById('inputDetail');
+        if (detailEl && (!detailEl.value || detailEl.value.startsWith('ไม้ที่'))) {
+          detailEl.value = `${lotName}: ซื้อทองคำแท่ง (@฿${buyP.toLocaleString()})`;
+        }
+      } else if (state.selectedEntryMode === 'เงินลงทุนหุ้น') {
+        const buyP = Number(document.getElementById('inputStockBuyPrice')?.value) || 100;
+        const ticker = (document.getElementById('inputStockTicker')?.value || 'SET').toUpperCase();
+        const sh = buyP > 0 ? amt / buyP : 0;
+        document.getElementById('stockLotCalcBadge').textContent = `จำนวน: ${sh.toFixed(2)} หุ้น`;
+        const lotName = document.getElementById('inputStockLotName')?.value || 'ไม้ใหม่';
+        const detailEl = document.getElementById('inputDetail');
+        if (detailEl && (!detailEl.value || detailEl.value.startsWith('ไม้ที่'))) {
+          detailEl.value = `${lotName}: หุ้น ${ticker} (@฿${buyP})`;
+        }
+      }
+    }
+
+    function populateWithdrawLotSelector(m) {
+      const sel = document.getElementById('selectLotToWithdraw');
+      if (!sel) return;
+      const lots = state.withdrawAsset === 'ทองคำ' ? m.goldLots : m.stockLots;
+      let html = `<option value="CUSTOM">-- ระบุจำนวนเงินที่ถอน/ขายด้วยตัวเอง --</option>`;
+      lots.forEach((l, i) => {
+        const title = state.withdrawAsset === 'ทองคำ'
+          ? `${l.lotName || 'ไม้ที่ ' + (i + 1)} (ทุน ${formatShortBaht(l.amount)} @฿${l.buyPrice} -> มูลค่าปัจจุบัน ${formatBaht(l.currentValue)})`
+          : `${l.ticker} ${l.lotName || 'ไม้ที่ ' + (i + 1)} (ทุน ${formatShortBaht(l.amount)} @฿${l.buyPrice} -> มูลค่าปัจจุบัน ${formatBaht(l.currentValue)})`;
+        html += `<option value="${l.id}">${title}</option>`;
+      });
+      sel.innerHTML = html;
+    }
+
+    function onSelectSpecificLotToWithdraw() {
+      const lotId = document.getElementById('selectLotToWithdraw')?.value;
+      if (!lotId || lotId === 'CUSTOM') return;
+      const m = calculatePortfolioMetrics();
+      const allLots = [...m.goldLots, ...m.stockLots];
+      const found = allLots.find(l => l.id === lotId);
+      if (!found) return;
+
+      const principalRadio = document.querySelector('input[name="withdrawCalcMethod"][value="input_is_principal"]');
+      if (principalRadio) principalRadio.checked = true;
+
+      document.getElementById('inputAmount').value = found.amount.toFixed(2);
+      const pnlAbs = Math.abs(found.unrealizedPnl);
+      if (found.unrealizedPnl > 0.01) {
+        setWithdrawPnlType('profit');
+        document.getElementById('inputPnlAmount').value = pnlAbs.toFixed(2);
+      } else if (found.unrealizedPnl < -0.01) {
+        setWithdrawPnlType('loss');
+        document.getElementById('inputPnlAmount').value = pnlAbs.toFixed(2);
+      } else {
+        setWithdrawPnlType('none');
+        document.getElementById('inputPnlAmount').value = 0;
+      }
+
+      const labelName = found.ticker ? `หุ้น ${found.ticker} (${found.lotName || ''})` : `ทองคำ (${found.lotName || ''})`;
+      document.getElementById('inputDetail').value = `ขายคืน ${labelName} เป็นเงินสด`;
+      updateWithdrawPreview();
+    }
+
+    function quickSellSpecificLot(lotId, assetType) {
+      openRecordModal('ถอนทุนคืน / ขายสินทรัพย์');
+      setWithdrawAsset(assetType);
+      const sel = document.getElementById('selectLotToWithdraw');
+      if (sel) {
+        sel.value = lotId;
+        onSelectSpecificLotToWithdraw();
+      }
+    }
+
+    function setWithdrawAsset(asset) {
+      state.withdrawAsset = asset;
+      const btnGold = document.getElementById('btnWithdrawAssetGold');
+      const btnStock = document.getElementById('btnWithdrawAssetStock');
+
+      if (asset === 'ทองคำ') {
+        btnGold.className = 'p-3 rounded-xl border-2 border-indigo-600 bg-white text-left flex items-center justify-between';
+        btnStock.className = 'p-3 rounded-xl border-2 border-slate-200 bg-white/70 text-left flex items-center justify-between';
+      } else {
+        btnStock.className = 'p-3 rounded-xl border-2 border-indigo-600 bg-white text-left flex items-center justify-between';
+        btnGold.className = 'p-3 rounded-xl border-2 border-slate-200 bg-white/70 text-left flex items-center justify-between';
+      }
+      const m = calculatePortfolioMetrics();
+      populateWithdrawLotSelector(m);
+      updateWithdrawPreview();
+    }
+
+    function setWithdrawPnlType(pnlType) {
+      state.withdrawPnlType = pnlType;
+      const types = ['none', 'profit', 'loss'];
+      types.forEach(t => {
+        const btn = document.getElementById('pnlType_' + t);
+        if (!btn) return;
+        if (t === pnlType) {
+          if (t === 'profit') btn.className = 'py-2 px-2 rounded-xl text-xs font-bold border-2 border-emerald-600 bg-emerald-600 text-white';
+          else if (t === 'loss') btn.className = 'py-2 px-2 rounded-xl text-xs font-bold border-2 border-rose-600 bg-rose-600 text-white';
+          else btn.className = 'py-2 px-2 rounded-xl text-xs font-bold border-2 border-slate-700 bg-slate-800 text-white';
+        } else {
+          btn.className = 'py-2 px-2 rounded-xl text-xs font-bold border-2 border-slate-300 bg-white text-slate-700';
+        }
+      });
+
+      const pnlContainer = document.getElementById('pnlAmountContainer');
+      const lblPnl = document.getElementById('lblPnlAmountInput');
+      if (pnlType === 'none') {
+        pnlContainer.classList.add('opacity-50');
+        document.getElementById('inputPnlAmount').value = 0;
+        lblPnl.textContent = 'ไม่มีกำไร/ขาดทุน (0 บาท):';
+      } else if (pnlType === 'profit') {
+        pnlContainer.classList.remove('opacity-50');
+        lblPnl.textContent = '🟢 จำนวนเงินกำไรที่ได้ (บาท):';
+      } else {
+        pnlContainer.classList.remove('opacity-50');
+        lblPnl.textContent = '🔴 จำนวนเงินที่ขาดทุน (บาท):';
+      }
+      updateWithdrawPreview();
+    }
+
+    function fillMaxAssetAmount() {
+      const m = calculatePortfolioMetrics();
+      const avail = state.withdrawAsset === 'ทองคำ' ? m.goldNet : m.stockNet;
+      document.getElementById('inputAmount').value = avail;
+      updateWithdrawPreview();
+    }
+
+    function computeWithdrawBreakdown() {
+      const rawAmount = Math.max(0, Number(document.getElementById('inputAmount')?.value) || 0);
+      const rawPnl = state.withdrawPnlType === 'none'
+        ? 0
+        : Math.max(0, Number(document.getElementById('inputPnlAmount')?.value) || 0);
+
+      const methodRadio = document.querySelector('input[name="withdrawCalcMethod"]:checked');
+      const method = methodRadio ? methodRadio.value : 'deduct_from_input';
+
+      let principalToReduce = rawAmount;
+      let cashFromPrincipalAfterDeduct = rawAmount;
+      let totalNetCashIncrease = rawAmount;
+
+      if (method === 'deduct_from_input') {
+        cashFromPrincipalAfterDeduct = Math.max(0, rawAmount - rawPnl);
+        if (state.withdrawPnlType === 'profit') {
+          principalToReduce = cashFromPrincipalAfterDeduct;
+          totalNetCashIncrease = cashFromPrincipalAfterDeduct + rawPnl;
+        } else if (state.withdrawPnlType === 'loss') {
+          principalToReduce = rawAmount;
+          totalNetCashIncrease = cashFromPrincipalAfterDeduct;
+        } else {
+          principalToReduce = rawAmount;
+          totalNetCashIncrease = rawAmount;
+        }
+      } else {
+        principalToReduce = rawAmount;
+        if (state.withdrawPnlType === 'profit') {
+          cashFromPrincipalAfterDeduct = rawAmount;
+          totalNetCashIncrease = rawAmount + rawPnl;
+        } else if (state.withdrawPnlType === 'loss') {
+          cashFromPrincipalAfterDeduct = Math.max(0, rawAmount - rawPnl);
+          totalNetCashIncrease = cashFromPrincipalAfterDeduct;
+        } else {
+          cashFromPrincipalAfterDeduct = rawAmount;
+          totalNetCashIncrease = rawAmount;
+        }
+      }
+
+      return {
+        assetCategory: state.withdrawAsset === 'ทองคำ' ? 'ถอนทุนคืนทองคำ' : 'ถอนทุนคืนหุ้น',
+        assetLabel: state.withdrawAsset === 'ทองคำ' ? 'เงินลงทุนทองคำ' : 'เงินลงทุนหุ้น',
+        rawAmount,
+        rawPnl,
+        principalToReduce,
+        cashFromPrincipalAfterDeduct,
+        totalNetCashIncrease,
+        pnlType: state.withdrawPnlType
+      };
+    }
+
+    function updateWithdrawPreview() {
+      const box = document.getElementById('withdrawPreviewBox');
+      if (!box) return;
+      const b = computeWithdrawBreakdown();
+
+      document.getElementById('previewLine1').innerHTML =
+        `• เงินที่หักกำไร/ขาดทุนกลับเข้าเงินสดคงเหลือ: <strong class="text-amber-300">${formatBaht(b.cashFromPrincipalAfterDeduct)}</strong> (ตัดพอร์ต${state.withdrawAsset} <strong>${formatBaht(b.principalToReduce)}</strong>)`;
+
+      if (b.pnlType === 'profit' && b.rawPnl > 0) {
+        document.getElementById('previewLine2').innerHTML =
+          `• นำกำไรไปรวมในหัวข้อ "กำไร / เงินปันผลสะสม": <strong class="text-emerald-300">+${formatBaht(b.rawPnl)}</strong>`;
+      } else if (b.pnlType === 'loss' && b.rawPnl > 0) {
+        document.getElementById('previewLine2').innerHTML =
+          `• นำขาดทุนไปรวมในหัวข้อ "ขาดทุนจากการลงทุน": <strong class="text-rose-300">-${formatBaht(b.rawPnl)}</strong>`;
+      } else {
+        document.getElementById('previewLine2').innerHTML =
+          `• กำไร / ขาดทุน: <strong>ไม่มี (เท่าทุน ฿0.00)</strong>`;
+      }
+
+      document.getElementById('previewLine3').innerHTML =
+        `• รวมเงินสดคงเหลือในมือเพิ่มขึ้นสุทธิ: <strong class="text-emerald-300">+${formatBaht(b.totalNetCashIncrease)}</strong>`;
+    }
+
+    function setQuickAmount(val) {
+      const input = document.getElementById('inputAmount');
+      const current = Number(input.value) || 0;
+      input.value = current + val;
+      updateWithdrawPreview();
+      updateLotPreviewCalc();
+    }
+
+    function setNowTimestamp() {
+      const now = new Date();
+      const pad = n => String(n).padStart(2, '0');
+      const localIso = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+      const el = document.getElementById('inputDatetime');
+      if (el) el.value = localIso;
+    }
+
+    function resetEntryForm() {
+      document.getElementById('inputAmount').value = '';
+      document.getElementById('inputDetail').value = '';
+      document.getElementById('inputNote').value = '';
+      document.getElementById('inputPnlAmount').value = '0';
+      setNowTimestamp();
+      updateWithdrawPreview();
+      updateLotPreviewCalc();
+    }
+
+    async function handleFormSubmit(e) {
+      if (e) e.preventDefault();
+      const rawAmountStr = String(document.getElementById('inputAmount').value || '').replace(/,/g, '').trim();
+      const rawAmount = Number(rawAmountStr) || 0;
+      if (rawAmount <= 0) {
+        showToast('กรุณากรอกจำนวนเงิน (บาท) ให้มากกว่า 0 ครับ', '⚠️');
+        const amtInput = document.getElementById('inputAmount');
+        if (amtInput) amtInput.focus();
+        return;
+      }
+
+      const now = new Date();
+      const pad = n => String(n).padStart(2, '0');
+      const rawDt = document.getElementById('inputDatetime').value;
+      let formattedTs = '';
+      if (rawDt) {
+        const cleanDt = rawDt.replace('T', ' ');
+        formattedTs = cleanDt.length === 16 ? `${cleanDt}:${pad(now.getSeconds())}` : cleanDt;
+      } else {
+        formattedTs = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+      }
+
+      let detail = document.getElementById('inputDetail').value.trim();
+      const note = document.getElementById('inputNote').value.trim();
+
+      // เติมรายละเอียดเริ่มต้นอัตโนมัติกรณีผู้ใช้ไม่ได้พิมพ์ เพื่อไม่ให้ติดปัญหาบันทึกไม่ได้
+      const defaultDetails = {
+        'เงินที่ใช้ออกไป / ถอนใช้': 'ค่าใช้จ่ายส่วนตัวป้าเล็ก',
+        'กำไร / เงินปันผลสะสม': 'รับเงินปันผล / กำไรจากการลงทุน',
+        'ขาดทุนจากการลงทุน': 'บันทึกผลขาดทุนจากการลงทุน',
+        'เงินลงทุนทองคำ': 'ซื้อทองคำแท่งสะสม',
+        'เงินลงทุนหุ้น': 'ลงทุนซื้อหุ้นเข้าพอร์ต'
+      };
+      if (!detail) {
+        detail = defaultDetails[state.selectedEntryMode] || state.selectedEntryMode;
+      }
+
+      const createdEntries = [];
+
+      if (state.selectedEntryMode === 'ถอนทุนคืน / ขายสินทรัพย์') {
+        const b = computeWithdrawBreakdown();
+        const selectedLotId = document.getElementById('selectLotToWithdraw')?.value;
+        if (selectedLotId && selectedLotId !== 'CUSTOM') {
+          const targetTx = state.transactions.find(t => t.id === selectedLotId);
+          if (targetTx) targetTx.isSoldOut = true;
+        }
+
+        const mainEntry = {
+          id: 'tx-' + Date.now() + '-1',
+          timestamp: formattedTs,
+          category: b.assetCategory,
+          detail: detail || `ขายคืน${state.withdrawAsset}เป็นเงินสด`,
+          amount: b.principalToReduce,
+          note: note
+            ? `${note} (เข้าเงินสดหลังหักกำไร/ขาดทุน ${formatBaht(b.cashFromPrincipalAfterDeduct)})`
+            : `เข้าเงินสดหลังหักกำไร/ขาดทุน ${formatBaht(b.cashFromPrincipalAfterDeduct)}`
+        };
+        createdEntries.push(mainEntry);
+
+        if (b.pnlType === 'profit' && b.rawPnl > 0) {
+          createdEntries.push({
+            id: 'tx-' + Date.now() + '-2',
+            timestamp: formattedTs,
+            category: 'กำไร / เงินปันผลสะสม',
+            detail: `กำไรจากการขาย${state.withdrawAsset}: ${detail}`,
+            amount: b.rawPnl,
+            note: `แยกกำไรอัตโนมัติจากการถอนทุนคืน${state.withdrawAsset}`
+          });
+        } else if (b.pnlType === 'loss' && b.rawPnl > 0) {
+          createdEntries.push({
+            id: 'tx-' + Date.now() + '-2',
+            timestamp: formattedTs,
+            category: 'ขาดทุนจากการลงทุน',
+            detail: `ขาดทุนจากการขาย${state.withdrawAsset}: ${detail}`,
+            amount: b.rawPnl,
+            note: `แยกขาดทุนอัตโนมัติจากการถอนทุนคืน${state.withdrawAsset}`
+          });
+        }
+      } else if (state.selectedEntryMode === 'เงินลงทุนทองคำ') {
+        const lotName = document.getElementById('inputGoldLotName').value.trim() || 'ไม้ใหม่';
+        const buyPrice = Number(document.getElementById('inputGoldBuyPrice').value) || state.marketPrices.gold || 43650;
+        createdEntries.push({
+          id: 'tx-' + Date.now(),
+          timestamp: formattedTs,
+          category: 'เงินลงทุนทองคำ',
+          lotName,
+          buyPrice,
+          detail: detail || `${lotName}: ซื้อทองคำแท่ง (@฿${buyPrice.toLocaleString()})`,
+          amount: rawAmount,
+          note: note || `ราคาทองตอนซื้อ ฿${buyPrice.toLocaleString()}/บาททอง`
+        });
+      } else if (state.selectedEntryMode === 'เงินลงทุนหุ้น') {
+        const ticker = (document.getElementById('inputStockTicker').value.trim() || 'SET').toUpperCase();
+        const lotName = document.getElementById('inputStockLotName').value.trim() || 'ไม้ใหม่';
+        const buyPrice = Number(document.getElementById('inputStockBuyPrice').value) || 100;
+        if (state.marketPrices.stocks[ticker] === undefined) {
+          state.marketPrices.stocks[ticker] = buyPrice;
+        }
+        createdEntries.push({
+          id: 'tx-' + Date.now(),
+          timestamp: formattedTs,
+          category: 'เงินลงทุนหุ้น',
+          ticker,
+          lotName,
+          buyPrice,
+          detail: detail || `${lotName}: หุ้น ${ticker} (@฿${buyPrice})`,
+          amount: rawAmount,
+          note: note || `หุ้น ${ticker} ราคาซื้อ ฿${buyPrice}/หุ้น`
+        });
+      } else {
+        createdEntries.push({
+          id: 'tx-' + Date.now(),
+          timestamp: formattedTs,
+          category: state.selectedEntryMode,
+          detail,
+          amount: rawAmount,
+          note: note || (state.selectedEntryMode === 'เงินที่ใช้ออกไป / ถอนใช้' ? 'ถอนเงินสดใช้จ่าย' : '-')
+        });
+      }
+
+      state.transactions.push(...createdEntries);
+      saveStateToStorage();
+      renderAll();
+      resetEntryForm();
+      closeRecordModal();
+
+      showToast(`บันทึก "${createdEntries[0].detail}" (${formatBaht(rawAmount)}) สำเร็จ!`, '✅');
+
+      if (state.scriptUrl) {
+        for (const item of createdEntries) {
+          sendSingleTxToSheet(item);
+        }
+      }
+    }
+
+    // =========================================================================
+    // EDIT INDIVIDUAL LOT & MANUAL MARKET PRICE SYNC
+    // =========================================================================
+    function openEditLotModal(lotId) {
+      const tx = state.transactions.find(t => t.id === lotId);
+      if (!tx) return;
+      state.editingLotId = lotId;
+      document.getElementById('editLotNameInput').value = tx.lotName || tx.detail || '';
+      document.getElementById('editLotCostInput').value = tx.amount;
+      document.getElementById('editLotBuyPriceInput').value = tx.buyPrice || 100;
+
+      const isStock = tx.category === 'เงินลงทุนหุ้น';
+      document.getElementById('editLotTickerWrap').classList.toggle('hidden', !isStock);
+      if (isStock) {
+        document.getElementById('editLotTickerInput').value = tx.ticker || 'SET';
+        document.getElementById('editLotBuyPriceLabel').textContent = 'ราคาหุ้นตอนซื้อ (บาท/หุ้น):';
+      } else {
+        document.getElementById('editLotBuyPriceLabel').textContent = 'ราคาทองคำตอนซื้อ (บาท/บาททองคำ):';
+      }
+      document.getElementById('editLotModal').classList.remove('hidden');
+    }
+
+    function closeEditLotModal() {
+      document.getElementById('editLotModal').classList.add('hidden');
+      state.editingLotId = null;
+    }
+
+    function saveEditedLot() {
+      if (!state.editingLotId) return;
+      const tx = state.transactions.find(t => t.id === state.editingLotId);
+      if (!tx) return;
+
+      const newLotName = document.getElementById('editLotNameInput').value.trim() || 'ไม้ที่ลงทุน';
+      const newCost = Number(document.getElementById('editLotCostInput').value) || tx.amount;
+      const newBuyPrice = Number(document.getElementById('editLotBuyPriceInput').value) || tx.buyPrice;
+
+      tx.lotName = newLotName;
+      tx.amount = newCost;
+      tx.buyPrice = newBuyPrice;
+
+      if (tx.category === 'เงินลงทุนหุ้น') {
+        const newTicker = (document.getElementById('editLotTickerInput').value.trim() || 'SET').toUpperCase();
+        tx.ticker = newTicker;
+        tx.detail = `${newLotName}: หุ้น ${newTicker} (@฿${newBuyPrice})`;
+        if (state.marketPrices.stocks[newTicker] === undefined) {
+          state.marketPrices.stocks[newTicker] = newBuyPrice;
+        }
+      } else {
+        tx.detail = `${newLotName}: ซื้อทองคำแท่ง (@฿${newBuyPrice.toLocaleString()})`;
+      }
+
+      saveStateToStorage();
+      renderAll();
+      closeEditLotModal();
+      showToast('อัปเดตข้อมูลไม้ที่ลงทุนเรียบร้อยแล้ว', '✏️');
+    }
+
+    function adjustGoldPriceStep(delta) {
+      const current = Number(state.marketPrices.gold) || 43650;
+      state.marketPrices.gold = Math.max(100, current + delta);
+      document.getElementById('inputCurrentGoldPrice').value = state.marketPrices.gold;
+      saveStateToStorage();
+      renderAll();
+      showToast(`ปรับราคาทองปัจจุบันเป็น ฿${state.marketPrices.gold.toLocaleString()}/บาททอง`, '🥇');
+    }
+
+    function onManualGoldPriceChange() {
+      const v = Number(document.getElementById('inputCurrentGoldPrice').value);
+      if (!isNaN(v) && v > 0) {
+        state.marketPrices.gold = v;
+        saveStateToStorage();
+        renderAll();
+      }
+    }
+
+    function onManualStockPriceChange(ticker, val) {
+      const v = Number(val);
+      if (!isNaN(v) && v > 0) {
+        state.marketPrices.stocks[ticker] = v;
+        saveStateToStorage();
+        renderAll();
+        showToast(`ตั้งราคาปัจจุบันหุ้น ${ticker} = ฿${v.toFixed(2)} เรียบร้อย`, '📊');
+      }
+    }
+
+    function openGeminiConfigModal() {
+      const m = calculatePortfolioMetrics();
+      document.getElementById('modalGoldPriceInput').value = state.marketPrices.gold || 43650;
+      document.getElementById('inputGeminiApiKey').value = state.geminiApiKey || '';
+
+      const tickers = Array.from(new Set(m.stockLots.map(l => l.ticker)));
+      const listEl = document.getElementById('modalStockPricesList');
+      if (tickers.length === 0) {
+        listEl.innerHTML = `<div class="text-xs text-slate-500">ไม่มีรายการหุ้นในพอร์ต</div>`;
+      } else {
+        listEl.innerHTML = tickers.map(tk => {
+          const curP = Number(state.marketPrices.stocks[tk]) || 0;
+          return `
+            <div class="flex items-center justify-between gap-2 bg-white p-2.5 rounded-xl border border-sky-200">
+              <span class="font-extrabold text-sm text-sky-950">${tk}</span>
+              <div class="flex items-center gap-1.5">
+                <span class="text-xs text-slate-500">฿</span>
+                <input type="number" step="any" inputmode="decimal" data-modal-ticker="${tk}" value="${curP}" class="num-font w-28 px-3 py-1.5 rounded-lg border border-slate-300 text-right font-extrabold text-slate-900" />
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+      document.getElementById('geminiConfigModal').classList.remove('hidden');
+    }
+
+    function closeGeminiConfigModal() {
+      document.getElementById('geminiConfigModal').classList.add('hidden');
+    }
+
+    function saveGeminiConfigAndSync() {
+      const modalGold = Number(document.getElementById('modalGoldPriceInput')?.value);
+      if (!isNaN(modalGold) && modalGold > 0) {
+        state.marketPrices.gold = modalGold;
+      }
+      document.querySelectorAll('[data-modal-ticker]').forEach(inp => {
+        const tk = inp.getAttribute('data-modal-ticker');
+        const val = Number(inp.value);
+        if (tk && !isNaN(val) && val > 0) {
+          state.marketPrices.stocks[tk] = val;
+        }
+      });
+
+      const key = document.getElementById('inputGeminiApiKey').value.trim();
+      state.geminiApiKey = key;
+      try {
+        localStorage.setItem(STORAGE_KEY_GEMINI, key);
+      } catch (e) {}
+      saveStateToStorage();
+      closeGeminiConfigModal();
+      syncAllMarketPrices();
+    }
+
+    function hideGeminiInsight() {
+      document.getElementById('geminiInsightBanner').classList.add('hidden');
+    }
+
+    async function syncAllMarketPrices() {
+      // อ่านค่าล่าสุดจากช่องกรอกหน้าหลักก่อนคำนวณเสมอ
+      const manualGoldEl = document.getElementById('inputCurrentGoldPrice');
+      if (manualGoldEl && Number(manualGoldEl.value) > 0) {
+        state.marketPrices.gold = Number(manualGoldEl.value);
+      }
+
+      const now = new Date();
+      const pad = n => String(n).padStart(2, '0');
+      const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())} น.`;
+      document.getElementById('lastPriceSyncLabel').textContent = `Sync ล่าสุด: ${timeStr}`;
+
+      const updatedSummary = calculatePortfolioMetrics();
+      const insightBanner = document.getElementById('geminiInsightBanner');
+      const insightText = document.getElementById('geminiInsightText');
+      insightText.innerHTML =
+        `เทียบราคาปัจจุบันที่กรอก (ทองคำ <strong>${formatBaht(state.marketPrices.gold)}/บาททอง</strong>): ` +
+        `ก้อนทองคำทั้ง <strong>${updatedSummary.goldLots.length} ไม้</strong> เหลือมูลค่าปัจจุบัน <strong>${formatBaht(updatedSummary.goldMarketValue)}</strong> (${formatBaht(updatedSummary.goldUnrealizedPnl, true)}) ` +
+        `และก้อนหุ้นทั้ง <strong>${updatedSummary.stockLots.length} ไม้</strong> เหลือมูลค่าปัจจุบัน <strong>${formatBaht(updatedSummary.stockMarketValue)}</strong> (${formatBaht(updatedSummary.stockUnrealizedPnl, true)}) ` +
+        `รวมเป็นเงินรวมสุทธิทั้งหมดของป้าเล็ก <strong>${formatBaht(updatedSummary.netTotal)}</strong> ครับ`;
+      insightBanner.classList.remove('hidden');
+
+      saveStateToStorage();
+      renderAll();
+      showToast('คำนวณยอดเงินคงเหลือตามราคาปัจจุบันเรียบร้อยแล้ว!', '✅');
+    }
+
+    // =========================================================================
+    // TAB 2: HISTORY & MONTHLY EXPENSE DETAILS
+    // =========================================================================
+    function populateMonthFilterOptions() {
+      const select = document.getElementById('filterMonthSelect');
+      const currentVal = select.value || 'ALL';
+      const monthSet = new Set(['2026-09', '2026-10', '2026-11', '2026-12']);
+      state.transactions.forEach(t => {
+        const dt = parseTimestampParts(t.timestamp);
+        if (dt.monthKey) monthSet.add(dt.monthKey);
+      });
+
+      const sortedMonths = Array.from(monthSet).sort().reverse();
+      const monthNamesFull = [
+        'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+        'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+      ];
+
+      let html = `<option value="ALL">ทุกเดือนทั้งหมด (${state.transactions.length} รายการ)</option>`;
+      sortedMonths.forEach(mk => {
+        const [y, m] = mk.split('-');
+        const mName = monthNamesFull[(Number(m) || 1) - 1] || mk;
+        const count = state.transactions.filter(t => parseTimestampParts(t.timestamp).monthKey === mk).length;
+        html += `<option value="${mk}">${mName} ${y} (${mk}) — ${count} รายการ</option>`;
+      });
+
+      select.innerHTML = html;
+      if (sortedMonths.includes(currentVal) || currentVal === 'ALL') {
+        select.value = currentVal;
+      }
+    }
+
+    function setHistoryQuickFilter(mode) {
+      const catSelect = document.getElementById('filterCategorySelect');
+      const btnAll = document.getElementById('filterQuickAll');
+      const btnExp = document.getElementById('filterQuickExpense');
+
+      if (mode === 'EXPENSE_ONLY') {
+        catSelect.value = 'เงินที่ใช้ออกไป / ถอนใช้';
+        btnExp.className = 'flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-xs font-bold bg-orange-600 text-white shadow-sm transition';
+        btnAll.className = 'flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition';
+      } else {
+        catSelect.value = 'ALL';
+        btnAll.className = 'flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-slate-900 shadow-sm transition';
+        btnExp.className = 'flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition';
+      }
+      renderHistoryView();
+    }
+
+    function renderHistoryView() {
+      const monthFilter = document.getElementById('filterMonthSelect')?.value || 'ALL';
+      const catFilter = document.getElementById('filterCategorySelect')?.value || 'ALL';
+      const searchQ = (document.getElementById('filterSearchInput')?.value || '').trim().toLowerCase();
+
+      const monthScoped = state.transactions.filter(t => {
+        const dt = parseTimestampParts(t.timestamp);
+        return monthFilter === 'ALL' || dt.monthKey === monthFilter;
+      });
+
+      let mExpense = 0;
+      let mExpenseCount = 0;
+      let mInvest = 0;
+      let mWithdraw = 0;
+      let mProfit = 0;
+      let mLoss = 0;
+
+      monthScoped.forEach(t => {
+        const amt = Number(t.amount) || 0;
+        if (t.category === 'เงินที่ใช้ออกไป / ถอนใช้') {
+          mExpense += amt;
+          mExpenseCount++;
+        } else if (t.category === 'เงินลงทุนทองคำ' || t.category === 'เงินลงทุนหุ้น') {
+          mInvest += amt;
+        } else if (t.category === 'ถอนทุนคืนทองคำ' || t.category === 'ถอนทุนคืนหุ้น') {
+          mWithdraw += amt;
+        } else if (t.category === 'กำไร / เงินปันผลสะสม') {
+          mProfit += amt;
+        } else if (t.category === 'ขาดทุนจากการลงทุน') {
+          mLoss += amt;
+        }
+      });
+
+      document.getElementById('histSumExpense').textContent = formatBaht(mExpense);
+      document.getElementById('histCountExpense').textContent = `${mExpenseCount} รายการที่ใช้จ่าย`;
+      document.getElementById('histSumInvest').textContent = formatBaht(mInvest);
+      document.getElementById('histSubWithdraw').textContent = `ถอนทุนคืน: ${formatBaht(mWithdraw)}`;
+      document.getElementById('histSumProfit').textContent = '+' + formatBaht(mProfit);
+      document.getElementById('histSumLoss').textContent = '-' + formatBaht(mLoss);
+
+      const filtered = monthScoped.filter(t => {
+        if (catFilter !== 'ALL' && t.category !== catFilter) return false;
+        if (searchQ) {
+          const hay = `${t.category} ${t.detail} ${t.note} ${t.timestamp} ${t.ticker || ''} ${t.lotName || ''}`.toLowerCase();
+          if (!hay.includes(searchQ)) return false;
+        }
+        return true;
+      }).sort((a, b) => String(b.timestamp).localeCompare(String(a.timestamp)));
+
+      document.getElementById('histTotalRowsLabel').textContent = `แสดง ${filtered.length} รายการ`;
+
+      const tbody = document.getElementById('historyTableBody');
+      if (filtered.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" class="py-10 text-center text-slate-400">
+              ไม่พบรายการบันทึกในเงื่อนไขที่เลือก
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(tx => {
+        const dt = parseTimestampParts(tx.timestamp);
+        const isOutflow = tx.category === 'เงินที่ใช้ออกไป / ถอนใช้' || tx.category === 'ขาดทุนจากการลงทุน';
+        const isProfit = tx.category === 'กำไร / เงินปันผลสะสม';
+        const amtColor = isOutflow ? 'text-rose-600' : (isProfit ? 'text-emerald-700' : 'text-slate-900');
+
+        return `
+          <tr class="hover:bg-slate-50/90 transition">
+            <td class="py-3 px-2.5 font-semibold text-slate-900 whitespace-nowrap">${dt.thaiDate}</td>
+            <td class="py-3 px-2.5 whitespace-nowrap">
+              <span class="num-font inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-900 text-amber-300 text-xs font-bold">
+                🕒 ${dt.timeText} น.
+              </span>
+            </td>
+            <td class="py-3 px-2.5 whitespace-nowrap">${getCategoryBadgeHtml(tx.category)}</td>
+            <td class="py-3 px-2.5 font-semibold text-slate-800">${tx.detail}</td>
+            <td class="py-3 px-2.5 text-right num-font font-extrabold ${amtColor} whitespace-nowrap">${formatBaht(tx.amount)}</td>
+            <td class="py-3 px-2.5 text-xs text-slate-500">${tx.note || '-'}</td>
+            <td class="py-3 px-2.5 text-center whitespace-nowrap">
+              <button type="button" onclick="openDeleteTxModal('${tx.id}')" class="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition">
+                ลบ
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // =========================================================================
+    // TAB 3: MONTHLY STATISTICS TABLE & CHARTS
+    // =========================================================================
+    function renderStatsView() {
+      const yearFilter = document.getElementById('statsYearFilter')?.value || 'ALL';
+      const defaultMonths = ['2026-09', '2026-10', '2026-11', '2026-12'];
+      const monthSet = new Set(defaultMonths);
+
+      state.transactions.forEach(t => {
+        const dt = parseTimestampParts(t.timestamp);
+        if (dt.monthKey) monthSet.add(dt.monthKey);
+      });
+
+      const allMonths = Array.from(monthSet)
+        .filter(mk => yearFilter === 'ALL' || mk.startsWith(yearFilter))
+        .sort();
+
+      const monthlyMap = {};
+      allMonths.forEach(mk => {
+        monthlyMap[mk] = {
+          gold: 0,
+          stock: 0,
+          withdraw: 0,
+          profit: 0,
+          loss: 0,
+          expense: 0,
+          totalMove: 0
+        };
+      });
+
+      state.transactions.forEach(t => {
+        const dt = parseTimestampParts(t.timestamp);
+        const mk = dt.monthKey;
+        if (!monthlyMap[mk]) return;
+        const amt = Number(t.amount) || 0;
+        if (t.category === 'เงินลงทุนทองคำ') monthlyMap[mk].gold += amt;
+        else if (t.category === 'เงินลงทุนหุ้น') monthlyMap[mk].stock += amt;
+        else if (t.category === 'ถอนทุนคืนทองคำ' || t.category === 'ถอนทุนคืนหุ้น') monthlyMap[mk].withdraw += amt;
+        else if (t.category === 'กำไร / เงินปันผลสะสม') monthlyMap[mk].profit += amt;
+        else if (t.category === 'ขาดทุนจากการลงทุน') monthlyMap[mk].loss += amt;
+        else if (t.category === 'เงินที่ใช้ออกไป / ถอนใช้') monthlyMap[mk].expense += amt;
+
+        monthlyMap[mk].totalMove += amt;
+      });
+
+      let sumGold = 0, sumStock = 0, sumWithdraw = 0, sumProfit = 0, sumLoss = 0, sumExpense = 0, sumAllMove = 0;
+
+      const tbody = document.getElementById('monthlyStatsTableBody');
+      const rowsHtml = allMonths.map(mk => {
+        const d = monthlyMap[mk];
+        sumGold += d.gold;
+        sumStock += d.stock;
+        sumWithdraw += d.withdraw;
+        sumProfit += d.profit;
+        sumLoss += d.loss;
+        sumExpense += d.expense;
+        sumAllMove += d.totalMove;
+
+        const fmtCell = val => val > 0 ? formatBaht(val) : '-';
+        return `
+          <tr class="hover:bg-slate-50">
+            <td class="py-3 px-3 font-extrabold text-slate-900">${mk}</td>
+            <td class="py-3 px-3 text-right text-amber-800 font-semibold">${fmtCell(d.gold)}</td>
+            <td class="py-3 px-3 text-right text-sky-800 font-semibold">${fmtCell(d.stock)}</td>
+            <td class="py-3 px-3 text-right text-indigo-700 font-semibold">${fmtCell(d.withdraw)}</td>
+            <td class="py-3 px-3 text-right text-emerald-700 font-bold">${fmtCell(d.profit)}</td>
+            <td class="py-3 px-3 text-right text-rose-600 font-bold">${fmtCell(d.loss)}</td>
+            <td class="py-3 px-3 text-right text-orange-600 font-bold">${fmtCell(d.expense)}</td>
+            <td class="py-3 px-3 text-right font-extrabold text-slate-900 bg-slate-50">${fmtCell(d.totalMove)}</td>
+          </tr>
+        `;
+      }).join('');
+
+      const totalRowHtml = `
+        <tr class="bg-emerald-950 text-white font-extrabold">
+          <td class="py-3.5 px-3 rounded-bl-xl">รวมทั้งสิ้น (Total)</td>
+          <td class="py-3.5 px-3 text-right text-amber-300">${formatBaht(sumGold)}</td>
+          <td class="py-3.5 px-3 text-right text-sky-300">${formatBaht(sumStock)}</td>
+          <td class="py-3.5 px-3 text-right text-indigo-200">${formatBaht(sumWithdraw)}</td>
+          <td class="py-3.5 px-3 text-right text-emerald-300">${formatBaht(sumProfit)}</td>
+          <td class="py-3.5 px-3 text-right text-rose-300">${formatBaht(sumLoss)}</td>
+          <td class="py-3.5 px-3 text-right text-orange-300">${formatBaht(sumExpense)}</td>
+          <td class="py-3.5 px-3 text-right rounded-br-xl bg-slate-900">${formatBaht(sumAllMove)}</td>
+        </tr>
+      `;
+
+      tbody.innerHTML = rowsHtml + totalRowHtml;
+
+      updateCharts(allMonths, monthlyMap);
+    }
+
+    function updateCharts(allMonths, monthlyMap) {
+      if (typeof Chart === 'undefined') return;
+
+      const barCtx = document.getElementById('monthlyBarChart');
+      if (barCtx) {
+        if (monthlyBarChartInstance) monthlyBarChartInstance.destroy();
+        monthlyBarChartInstance = new Chart(barCtx, {
+          type: 'bar',
+          data: {
+            labels: allMonths,
+            datasets: [
+              {
+                label: 'เงินลงทุนทองคำ',
+                data: allMonths.map(m => monthlyMap[m].gold),
+                backgroundColor: '#f59e0b',
+                borderRadius: 6
+              },
+              {
+                label: 'เงินลงทุนหุ้น',
+                data: allMonths.map(m => monthlyMap[m].stock),
+                backgroundColor: '#0284c7',
+                borderRadius: 6
+              },
+              {
+                label: 'ถอนทุนคืน',
+                data: allMonths.map(m => monthlyMap[m].withdraw),
+                backgroundColor: '#6366f1',
+                borderRadius: 6
+              },
+              {
+                label: 'กำไร / ปันผล',
+                data: allMonths.map(m => monthlyMap[m].profit),
+                backgroundColor: '#10b981',
+                borderRadius: 6
+              },
+              {
+                label: 'ขาดทุน',
+                data: allMonths.map(m => monthlyMap[m].loss),
+                backgroundColor: '#e11d48',
+                borderRadius: 6
+              },
+              {
+                label: 'เงินที่ใช้ออกไป',
+                data: allMonths.map(m => monthlyMap[m].expense),
+                backgroundColor: '#ea580c',
+                borderRadius: 6
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'bottom' }
+            },
+            scales: {
+              y: {
+                beginAtZero: true
+              }
+            }
+          }
+        });
+      }
+
+      const doughnutCtx = document.getElementById('portfolioDoughnutChart');
+      if (doughnutCtx) {
+        const m = calculatePortfolioMetrics();
+        if (portfolioDoughnutInstance) portfolioDoughnutInstance.destroy();
+        portfolioDoughnutInstance = new Chart(doughnutCtx, {
+          type: 'doughnut',
+          data: {
+            labels: ['เงินสดคงเหลือ', 'มูลค่าทองคำปัจจุบัน', 'มูลค่าหุ้นปัจจุบัน'],
+            datasets: [{
+              data: [Math.max(0, m.cashRemaining), m.goldMarketValue, m.stockMarketValue],
+              backgroundColor: ['#2563eb', '#f59e0b', '#0284c7'],
+              borderWidth: 2,
+              borderColor: '#ffffff'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'bottom' }
+            }
+          }
+        });
+      }
+    }
+
+    // =========================================================================
+    // NAVIGATION TABS (Sync both Top Segmented Bar & Bottom iOS Tab Bar)
+    // =========================================================================
+    function switchTab(tabName) {
+      state.activeTab = tabName;
+      const views = {
+        record: 'viewRecord',
+        history: 'viewHistory',
+        stats: 'viewStats',
+        sheet: 'viewSheet'
+      };
+      const btns = {
+        record: 'tabBtnRecord',
+        history: 'tabBtnHistory',
+        stats: 'tabBtnStats',
+        sheet: 'tabBtnSheet'
+      };
+      const iosBtns = {
+        record: 'iosNavRecord',
+        history: 'iosNavHistory',
+        stats: 'iosNavStats',
+        sheet: 'iosNavSheet'
+      };
+
+      Object.entries(views).forEach(([key, viewId]) => {
+        const el = document.getElementById(viewId);
+        if (el) el.classList.toggle('hidden', key !== tabName);
+      });
+
+      Object.entries(btns).forEach(([key, btnId]) => {
+        const btn = document.getElementById(btnId);
+        if (!btn) return;
+        if (key === tabName) {
+          btn.className = 'flex-1 min-w-[120px] py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-1.5 bg-emerald-600 text-white shadow-sm';
+        } else {
+          btn.className = 'flex-1 min-w-[120px] py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-1.5 text-slate-700 hover:bg-slate-100';
+        }
+      });
+
+      Object.entries(iosBtns).forEach(([key, iosId]) => {
+        const b = document.getElementById(iosId);
+        if (!b) return;
+        if (key === tabName) {
+          b.className = 'flex flex-col items-center justify-center py-1 rounded-xl text-emerald-600 font-extrabold';
+        } else {
+          b.className = 'flex flex-col items-center justify-center py-1 rounded-xl text-slate-500 font-semibold';
+        }
+      });
+
+      if (tabName === 'stats') {
+        renderStatsView();
+      } else if (tabName === 'history') {
+        renderHistoryView();
+      }
+    }
+
+    // =========================================================================
+    // MODALS (No alert/confirm/prompt!)
+    // =========================================================================
+    function openConfirmModal(actionType) {
+      state.pendingConfirmAction = actionType;
+      const modal = document.getElementById('confirmModal');
+      const title = document.getElementById('confirmModalTitle');
+      const desc = document.getElementById('confirmModalDesc');
+      const btn = document.getElementById('confirmModalActionBtn');
+
+      if (actionType === 'clearSample') {
+        title.textContent = '🧹 ยืนยันการล้างข้อมูลตัวอย่างทั้งหมด';
+        desc.textContent = 'รายการบันทึกทั้งหมดจะถูกล้างเป็น 0 เพื่อเริ่มบันทึกข้อมูลจริงของป้าเล็ก (เงินต้นหลักยังคงเป็น ฿4,000,000.00)';
+        btn.textContent = 'ยืนยันล้างข้อมูล';
+        btn.className = 'px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-sm';
+      } else if (actionType === 'restoreSample') {
+        title.textContent = '🔄 โหลดข้อมูลตัวอย่างจากชีต (ทอง 3 ไม้ / หุ้น 3 ไม้)';
+        desc.textContent = 'ระบบจะนำรายการตัวอย่างจาก Google Sheet เงินป้าเล็ก กลับมาแสดงผลใหม่';
+        btn.textContent = 'โหลดข้อมูลตัวอย่าง';
+        btn.className = 'px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm';
+      }
+      modal.classList.remove('hidden');
+    }
+
+    function openDeleteTxModal(txId) {
+      state.pendingConfirmAction = 'deleteTx';
+      state.pendingDeleteId = txId;
+      const tx = state.transactions.find(t => t.id === txId);
+      const modal = document.getElementById('confirmModal');
+      document.getElementById('confirmModalTitle').textContent = '🗑️ ยืนยันการลบรายการบันทึก';
+      document.getElementById('confirmModalDesc').textContent = tx
+        ? `ต้องการลบรายการ "${tx.detail}" (${formatBaht(tx.amount)}) หรือไม่?`
+        : 'ต้องการลบรายการนี้หรือไม่?';
+      const btn = document.getElementById('confirmModalActionBtn');
+      btn.textContent = 'ลบรายการ';
+      btn.className = 'px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-sm';
+      modal.classList.remove('hidden');
+    }
+
+    function closeConfirmModal() {
+      document.getElementById('confirmModal').classList.add('hidden');
+      state.pendingConfirmAction = null;
+      state.pendingDeleteId = null;
+    }
+
+    function executeConfirmedAction() {
+      if (state.pendingConfirmAction === 'clearSample') {
+        state.transactions = [];
+        saveStateToStorage();
+        renderAll();
+        showToast('ล้างข้อมูลตัวอย่างเรียบร้อย พร้อมบันทึกข้อมูลจริง!', '🧹');
+      } else if (state.pendingConfirmAction === 'restoreSample') {
+        state.transactions = SAMPLE_TRANSACTIONS.map(item => ({ ...item }));
+        saveStateToStorage();
+        renderAll();
+        showToast('โหลดข้อมูลตัวอย่างจากชีตเรียบร้อยแล้ว', '🔄');
+      } else if (state.pendingConfirmAction === 'deleteTx' && state.pendingDeleteId) {
+        state.transactions = state.transactions.filter(t => t.id !== state.pendingDeleteId);
+        saveStateToStorage();
+        renderAll();
+        showToast('ลบรายการเรียบร้อยแล้ว', '🗑️');
+      }
+      closeConfirmModal();
+    }
+
+    function openPrincipalModal() {
+      document.getElementById('inputPrincipalModal').value = state.principal;
+      document.getElementById('principalModal').classList.remove('hidden');
+    }
+
+    function closePrincipalModal() {
+      document.getElementById('principalModal').classList.add('hidden');
+    }
+
+    function savePrincipalAmount() {
+      const val = Number(document.getElementById('inputPrincipalModal').value);
+      if (!isNaN(val) && val >= 0) {
+        state.principal = val;
+        saveStateToStorage();
+        renderAll();
+        showToast('อัปเดตยอดเงินต้นหลักเรียบร้อยแล้ว', '⚙️');
+      }
+      closePrincipalModal();
+    }
+
+    // =========================================================================
+    // GOOGLE SHEET SYNC & CSV IMPORT/EXPORT
+    // =========================================================================
+    function saveScriptUrl() {
+      const url = document.getElementById('inputScriptUrl').value.trim();
+      state.scriptUrl = url;
+      try {
+        localStorage.setItem(STORAGE_KEY_SCRIPT_URL, url);
+      } catch (e) {}
+      showToast(url ? 'บันทึก Google Apps Script URL เรียบร้อยแล้ว' : 'ล้างค่า URL แล้ว', '🔗');
+    }
+
+    async function sendSingleTxToSheet(tx) {
+      if (!state.scriptUrl) return;
+      try {
+        await fetch(state.scriptUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: 'append', transaction: tx })
+        });
+      } catch (err) {}
+    }
+
+    async function syncToGoogleSheetNow() {
+      if (!state.scriptUrl) {
+        showToast('กรุณาวาง Google Apps Script Web App URL ก่อนกดซิงก์', '⚠️');
+        return;
+      }
+      try {
+        showToast('กำลังส่งข้อมูลไปยัง Google Sheet เงินป้าเล็ก...', '☁️');
+        await fetch(state.scriptUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: 'replaceAll', transactions: state.transactions })
+        });
+        showToast('ส่งข้อมูลทั้งหมดไปยัง Google Sheet เรียบร้อยแล้ว!', '✅');
+      } catch (err) {
+        showToast('ไม่สามารถเชื่อมต่อ URL ได้ กรุณาตรวจสอบสิทธิ์ Web App', '⚠️');
+      }
+    }
+
+    async function pullFromGoogleSheetNow() {
+      if (!state.scriptUrl) {
+        showToast('กรุณาวาง Google Apps Script Web App URL ก่อนดึงข้อมูล', '⚠️');
+        return;
+      }
+      try {
+        showToast('กำลังดึงข้อมูลจาก Google Sheet...', '📥');
+        const res = await fetch(state.scriptUrl);
+        const data = await res.json();
+        if (data && Array.isArray(data.transactions)) {
+          state.transactions = data.transactions.map((t, idx) => ({
+            id: 'sheet-' + idx + '-' + Date.now(),
+            timestamp: t.timestamp,
+            category: t.category,
+            detail: t.detail,
+            amount: Number(t.amount) || 0,
+            note: t.note || ''
+          }));
+          saveStateToStorage();
+          renderAll();
+          showToast(`ดึงข้อมูล ${state.transactions.length} รายการจากชีตสำเร็จ!`, '✅');
+        }
+      } catch (err) {
+        showToast('ดึงข้อมูลไม่สำเร็จ ตรวจสอบการตั้งค่า Who has access: Anyone', '⚠️');
+      }
+    }
+
+    function copyAppsScriptCode() {
+      const code = document.getElementById('appsScriptCodeBlock').innerText;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(code).then(() => {
+          showToast('คัดลอกโค้ด Apps Script เรียบร้อยแล้ว', '📋');
+        }).catch(() => fallbackCopyText(code));
+      } else {
+        fallbackCopyText(code);
+      }
+    }
+
+    function fallbackCopyText(text) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        showToast('คัดลอกโค้ด Apps Script เรียบร้อยแล้ว', '📋');
+      } catch (e) {}
+      document.body.removeChild(ta);
+    }
+
+    function exportCsvFile() {
+      const headers = ['วัน-เวลาที่บันทึก (Timestamp)', 'ประเภทรายการ', 'รายละเอียดรายการ', 'จำนวนเงิน (บาท)', 'หมายเหตุ'];
+      const rows = state.transactions.map(t => [
+        `"${String(t.timestamp).replace(/"/g, '""')}"`,
+        `"${String(t.category).replace(/"/g, '""')}"`,
+        `"${String(t.detail).replace(/"/g, '""')}"`,
+        Number(t.amount) || 0,
+        `"${String(t.note || '').replace(/"/g, '""')}"`
+      ]);
+      const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'เงินป้าเล็ก_transactions.csv';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      showToast('ดาวน์โหลดไฟล์ CSV เรียบร้อยแล้ว', '📥');
+    }
+
+    function importCsvFile(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const text = String(e.target.result || '');
+        const lines = text.split(/\r?\n/).filter(l => l.trim());
+        const imported = [];
+        for (let i = 1; i < lines.length; i++) {
+          const cols = lines[i].split(',').map(c => c.replace(/^"|"$/g, '').trim());
+          if (cols.length >= 4 && cols[0] && cols[1]) {
+            imported.push({
+              id: 'csv-' + Date.now() + '-' + i,
+              timestamp: cols[0],
+              category: cols[1],
+              detail: cols[2] || '-',
+              amount: Number(cols[3].replace(/[^0-9.-]+/g, '')) || 0,
+              note: cols[4] || ''
+            });
+          }
+        }
+        if (imported.length > 0) {
+          state.transactions = imported;
+          saveStateToStorage();
+          renderAll();
+          showToast(`นำเข้าข้อมูล ${imported.length} รายการสำเร็จ`, '📤');
+        }
+      };
+      reader.readAsText(file, 'UTF-8');
+    }
+
+    function showToast(msg, icon = '✅') {
+      const box = document.getElementById('toastBox');
+      document.getElementById('toastIcon').textContent = icon;
+      document.getElementById('toastMessage').textContent = msg;
+      box.classList.remove('hidden');
+      clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => {
+        box.classList.add('hidden');
+      }, 3200);
+    }
+
+    // Initialize on load
+    window.addEventListener('DOMContentLoaded', () => {
+      loadStateFromStorage();
+      setNowTimestamp();
+      selectEntryMode('เงินที่ใช้ออกไป / ถอนใช้');
+      setWithdrawPnlType('profit');
+      renderAll();
+    });
+  </script>
+</body>
+</html>
